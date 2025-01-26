@@ -2,12 +2,12 @@
 from __future__ import division
 import numpy as np
 from scipy.sparse import coo_matrix
-# from scipy.sparse.linalg import spsolve
 from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
 import time
+import h5py
 
 start_time = time.time()
 
@@ -26,7 +26,8 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     ndof = 2 * (nelx + 1) * (nely + 1)
 
     # Allocate design variables (as array), initialize and allocate sens.
-    x = volfrac * np.ones(nely * nelx, dtype=float)
+    x_0 = np.ones(nely * nelx, dtype=float) # TODO - Save domain here (maybe)
+    x = volfrac * x_0
     xold = x.copy()
     xPhys = x.copy()
 
@@ -76,13 +77,13 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
 
     # BC's and support (left edge fixed)
     dofs = np.arange(2 * (nelx + 1) * (nely + 1))
-    fixed = dofs[0:2 * (nely + 1):1]  # Fix all DOFs on left edge
-    # fixed = np.union1d(dofs[0:2 * (nely + 1):2], np.array([2 * (nelx + 1) * (nely + 1) - 1]))
-
+    fixed = dofs[0:2 * (nely + 1):1]  # Fix all DOFs on left edge TODO - separate into two matrices for constraints input
     free = np.setdiff1d(dofs, fixed)
 
     # Set up load vector
-    f = np.zeros((ndof, 1))
+    f = np.zeros((ndof, 1)) # TODO - separate into two matrices for loads input
+
+    # TODO - Save dataset here with "with" statement
 
     # Calculate load position
     rel_position = load_config['position']  # Between 0 and 1
@@ -105,19 +106,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     fig, ax = plt.subplots()
     im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
                    norm=colors.Normalize(vmin=-1, vmax=0))
-    
-    # # Plot load arrow
-    # arrow_length = 0.1 * nelx
-    # if load_config['direction'] == 'horizontal':
-    #     dx = -arrow_length if load_config['magnitude'] < 0 else arrow_length
-    #     dy = 0
-    # else:
-    #     dx = 0
-    #     dy = -arrow_length if load_config['magnitude'] < 0 else arrow_length
-    #
-    # ax.arrow(nelx, node_y_pos, dx, dy,
-    #          head_width=2, head_length=2, fc='r', ec='r')
-    
     plt.show(block=False)
 
     loop = 0

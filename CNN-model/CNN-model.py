@@ -18,21 +18,23 @@ class TopologyOptimizationCNN(nn.Module):
     def __init__(self):
         super(TopologyOptimizationCNN, self).__init__()
 
-        # Increased input channels to handle multiple matrices
+        # 5 total channels across 3 matrices:
+        # 1st matrix: domain (1 channel)
+        # 2nd matrix: loads (2 channels - x and y directions)
+        # 3rd matrix: constraints (2 channels - x and y directions)
         self.features = nn.Sequential(
-            ConvBlock(3, 32),  # 3 input channels: domain, loads, constraints
+            ConvBlock(5, 32),
             ConvBlock(32, 64),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU()
         )
 
-        # Dynamically calculate flattened size
         self.classifier = self._build_classifier()
 
     def _build_classifier(self):
-        # Test input to calculate flattened size
-        test_input = torch.zeros(1, 3, 180, 60)
+        # Test input now has 5 channels across 3 matrices
+        test_input = torch.zeros(1, 5, 180, 60)
         with torch.no_grad():
             feature_test = self.features(test_input)
             flattened_size = feature_test.view(1, -1).size(1)
@@ -43,7 +45,7 @@ class TopologyOptimizationCNN(nn.Module):
             nn.Dropout(0.5),
             nn.Linear(256, 64),
             nn.ReLU(),
-            nn.Linear(64, 1)  # Predicting FEM analysis result
+            nn.Linear(64, 1)
         )
 
     def forward(self, x):
