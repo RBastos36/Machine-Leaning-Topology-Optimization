@@ -296,47 +296,6 @@ def initialize_dataset(filename='cantilever_dataset.h5'):
             hf.create_group('problems')
 
 
-def split_dof_matrix(matrix, nelx, nely):
-    """Split a DOF matrix into x and y components."""
-    total_nodes = (nelx + 1) * (nely + 1)
-    x_dofs = np.arange(0, min(matrix.shape[0], 2 * total_nodes), 2)
-    y_dofs = np.arange(1, min(matrix.shape[0], 2 * total_nodes), 2)
-
-    if matrix.shape[1] == 1:  # For column vectors like loads and displacements
-        x_component = matrix[x_dofs, :]
-        y_component = matrix[y_dofs, :]
-    else:  # For general matrices
-        x_component = matrix[x_dofs]
-        y_component = matrix[y_dofs]
-
-    return x_component, y_component
-
-
-
-# def save_optimization_data(nelx, nely, volfrac, rmin, load_config, filename='cantilever_dataset.h5'):
-#     """Create a new problem entry with separated x/y components"""
-#     problem_id = generate_problem_id(nelx, nely, volfrac, rmin, load_config)
-#
-#     with h5py.File(filename, 'a') as hf:
-#         if problem_id in hf['problems']:
-#             print(f"Problem {problem_id} already exists. Using existing group.")
-#             return hf['problems'][problem_id]
-#
-#         prob_group = hf['problems'].create_group(problem_id)
-#
-#         # Store parameters as before
-#         params = prob_group.create_group('parameters')
-#         params.attrs['nelx'] = nelx
-#         params.attrs['nely'] = nely
-#         params.attrs['volfrac'] = volfrac
-#         params.attrs['rmin'] = rmin
-#         params.attrs['load_position'] = load_config['position']
-#         params.attrs['load_direction'] = load_config['direction']
-#         params.attrs['load_magnitude'] = load_config['magnitude']
-#
-#         return prob_group
-
-
 def generate_problem_id(nelx, nely, volfrac, rmin, load_config):
     """Generate a descriptive problem ID based on parameters"""
     return (f"vf{volfrac:.2f}_"
