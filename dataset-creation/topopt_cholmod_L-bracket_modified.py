@@ -17,26 +17,28 @@ import h5py
 # start_time = time.time()
 
 
-def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac = 0.5, void_end_y_frac = 0.5):
+def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac, void_end_y_frac,
+           void_end_x_frac_2, void_start_y_frac_2):
     print("Minimum compliance problem with OC")
     print("ndes: " + str(nelx) + " x " + str(nely))
     print("volfrac: " + str(volfrac) + ", rmin: " + str(rmin) + ", penal: " + str(penal))
     print("Filter method: " + ["Sensitivity based", "Density based"][ft])
     print(f"Load config: {load_config}")
     print(f"Void region fractions: {void_start_x_frac} (x_start), {void_end_y_frac} (y_end)")
+    print(f"Void region 2 fractions: {void_end_x_frac_2} (x_end), {void_start_y_frac_2} (y_start)")
+
 
     # Create void region mask (1 for material allowed, 0 for void)
-    void_start_x = int(nelx * void_start_x_frac)  # Start void at _% of width
-    void_end_y = int(nely * void_end_y_frac)  # Extend void to _% of height
-
     material_mask = np.ones((nely, nelx))
-    material_mask[void_start_x:, :void_end_y] = 0  # Set top right region to void
+    material_mask[int(nelx * void_start_x_frac):, :int(nely * void_end_y_frac)] = 0  # Set top right region to void
+    material_mask[:int(nelx * void_end_x_frac_2), int(nely * void_start_y_frac_2):] = 0  # Set top right region to void
+
 
     # Initialize dataset if needed
-    initialize_dataset('l-bracket_dataset.h5')
+    initialize_dataset('l-bracket-modified_dataset.h5')
 
     # Open the HDF5 file at the start and keep it open
-    h5file = h5py.File('l-bracket_dataset.h5', 'a')
+    h5file = h5py.File('l-bracket-modified_dataset.h5', 'a')
 
     try:
         problem_id = generate_problem_id(nelx, nely, volfrac, rmin, load_config)
@@ -56,6 +58,8 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac 
             params.attrs['load_magnitude'] = load_config['magnitude']
             params.attrs['void_start_x_frac'] = void_start_x_frac
             params.attrs['void_end_y_frac'] = void_end_y_frac
+            params.attrs['void_end_x_frac_2'] = void_end_x_frac_2
+            params.attrs['void_start_y_frac_2'] = void_start_y_frac_2
 
         # Max and min stiffness
         Emin = 1e-9
@@ -117,8 +121,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac 
 
         # BC's and support (top edge fixed)
         dofs = np.arange(2 * (nelx + 1) * (nely + 1))
-        fixed = union1d(dofs[0:2 * (nelx + 1) * (nely + 1):2 * (nely + 1)], # Top edge dofs in x direction
-                        dofs[1:2 * (nelx + 1) * (nely + 1):2 * (nely + 1)]) # Top edge dofs in y direction
+        fixed = dofs[0:2 * (nely + 1):1]  # Fix all DOFs on left edge
         free = np.setdiff1d(dofs, fixed)
 
         # Set up load vector
@@ -126,6 +129,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac 
 
         # Calculate load position
         rel_position = load_config['position']  # Between 0 and 1
+        void_end_y = int(nely * void_end_y_frac)  # Extend void to _% of height
         short_edge_length = nely - void_end_y  # Length of the shorter right edge
         node_y_pos = int(rel_position * short_edge_length)
         node_index = nelx * (nely + 1) + void_end_y + node_y_pos
@@ -415,6 +419,8 @@ if __name__ == "__main__":
     ft = 0  # ft==0 -> sens, ft==1 -> dens
     void_start_x_frac = 0.5
     void_end_y_frac = 0.5
+    void_end_x_frac_2 = 0.2
+    void_start_y_frac_2 = 0.2
 
     # Load configuration
     load_config = {
@@ -423,4 +429,5 @@ if __name__ == "__main__":
         'magnitude': -1.0  # negative for downward/leftward force
     }
 
-    xPhys, obj = topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac, void_end_y_frac)
+    xPhys, obj = topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac, void_end_y_frac,
+                        void_end_x_frac_2, void_start_y_frac_2)
