@@ -4,17 +4,12 @@
 
 from __future__ import division
 import numpy as np
-from numpy.ma.extras import union1d
 from scipy.sparse import coo_matrix
 from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
-import time
 import h5py
-
-
-# start_time = time.time()
 
 
 def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac, void_end_y_frac,
@@ -268,7 +263,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac,
     return xPhys, obj
 
 
-# Rest of the functions remain the same
 def lk():
     E = 1
     nu = 0.3

@@ -10,11 +10,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
-import time
 import h5py
-
-
-# start_time = time.time()
 
 
 def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac = 0.5, void_end_y_frac = 0.5):
@@ -264,7 +260,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_start_x_frac 
     return xPhys, obj
 
 
-# Rest of the functions remain the same
 def lk():
     E = 1
     nu = 0.3

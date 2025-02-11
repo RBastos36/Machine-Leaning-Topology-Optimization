@@ -245,7 +245,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     return xPhys, obj
 
 
-# Rest of the functions remain the same
 def lk():
     E = 1
     nu = 0.3

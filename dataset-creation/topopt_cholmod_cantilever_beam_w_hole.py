@@ -9,11 +9,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
-import time
 import h5py
-
-
-# start_time = time.time()
 
 
 def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_config):
@@ -66,7 +62,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_config):
         ndof = 2 * (nelx + 1) * (nely + 1)
 
         # Allocate design variables (as array), initialize and allocate sens.
-        #x_0 = np.ones(nely * nelx, dtype=float) FIXME
         x_0 = void_mask.flatten()
         x = volfrac * x_0
         xold = x.copy()
@@ -261,7 +256,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config, void_config):
     return xPhys, obj
 
 
-# Rest of the functions remain the same
 def lk():
     E = 1
     nu = 0.3
