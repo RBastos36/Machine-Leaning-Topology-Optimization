@@ -3,7 +3,6 @@
 import h5py
 import json
 import numpy as np
-from itertools import chain
 
 
 def print_hdf5_structure(hdf5_file, group_path="/", level=0):
