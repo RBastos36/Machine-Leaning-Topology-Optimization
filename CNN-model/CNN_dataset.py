@@ -63,6 +63,7 @@ class FEMDataset(Dataset):
         loads_x = self._load_h5_dataset(sample['inputs']['loads_x'])
         loads_y = self._load_h5_dataset(sample['inputs']['loads_y'])
 
+        # Pad domain matrix to match the size of other matrices
         padded_domain = np.zeros((domain.shape[0] + 1, domain.shape[1] + 1))
         padded_domain[:-1, :-1] = domain
 
