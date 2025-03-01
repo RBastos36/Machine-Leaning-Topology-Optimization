@@ -63,8 +63,11 @@ class FEMDataset(Dataset):
         loads_x = self._load_h5_dataset(sample['inputs']['loads_x'])
         loads_y = self._load_h5_dataset(sample['inputs']['loads_y'])
 
+        padded_domain = np.zeros((domain.shape[0] + 1, domain.shape[1] + 1))
+        padded_domain[:-1, :-1] = domain
+
         # Stack inputs into a single 5-channel tensor
-        input_data = np.stack([domain, fixed_x, fixed_y, loads_x, loads_y])
+        input_data = np.stack([padded_domain, fixed_x, fixed_y, loads_x, loads_y])
 
         # Load output matrices (2 channels)
         disp_x = self._load_h5_dataset(sample['outputs']['displacement_x'])

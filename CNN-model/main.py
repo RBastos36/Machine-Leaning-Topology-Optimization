@@ -71,7 +71,7 @@ def main():
         learning_rate=learning_rate,
         num_epochs=num_epochs,
         model_path=model_save_path,
-        load_model=False,  # Set to True if you want to resume training
+        load_model=True,  # Set to True if you want to resume training
         stats=stats
     )
 
