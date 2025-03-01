@@ -4,3 +4,4 @@
 *.json
 *.png
 *_deprecated.py
+*.svg
