@@ -2,3 +2,5 @@
 *.h5
 *.txt
 *.json
+*.png
+*_deprecated.py
