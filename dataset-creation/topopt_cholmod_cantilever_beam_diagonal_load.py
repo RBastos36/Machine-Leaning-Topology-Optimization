@@ -3,6 +3,7 @@
 # Adapted by Ricardo Bastos, January 2025
 
 from __future__ import division
+import math
 import numpy as np
 from scipy.sparse import coo_matrix
 from matplotlib import colors
@@ -120,11 +121,11 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         u = np.zeros((ndof, 1))
 
         # Initialize plot
-        plt.ion()
-        fig, ax = plt.subplots()
-        im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
-                       norm=colors.Normalize(vmin=-1, vmax=0))
-        plt.show(block=False)
+        # plt.ion()
+        # fig, ax = plt.subplots()
+        # im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
+        #                norm=colors.Normalize(vmin=-1, vmax=0))
+        # plt.show(block=False)
 
         loop = 0
         change = 1
@@ -196,10 +197,10 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             change = np.linalg.norm(x.reshape(nelx * nely, 1) - xold.reshape(nelx * nely, 1), np.inf)
 
             # Plot to screen
-            im.set_array(-xPhys.reshape((nelx, nely)).T)
-            fig.canvas.draw()
-            fig.canvas.flush_events()
-            plt.pause(0.001)
+            # im.set_array(-xPhys.reshape((nelx, nely)).T)
+            # fig.canvas.draw()
+            # fig.canvas.flush_events()
+            # plt.pause(0.001)
 
             print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
                 loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
@@ -208,7 +209,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             u_x, u_y = create_displacement_matrices(u, nelx, nely)
 
             # Save iteration data periodically
-            if loop % 10 == 0:
+            if loop <= 10 or 2 ** (int(math.log2(loop))) == loop:
                 iter_group_name = f'iter_{loop}'
                 if iter_group_name not in prob_group:
                     iter_data = prob_group.create_group(iter_group_name)
@@ -221,7 +222,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
 
                     iter_data.attrs['compliance'] = float(obj)
 
-        plt.show()
+        # plt.show()
         # input("Press any key...")
 
         # Save final results
