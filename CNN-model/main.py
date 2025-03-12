@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-import json
-import torch
+
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 from CNN_dataset import FEMDataset, calculate_dataset_statistics
 from CNN_model_node_level import TopologyOptimizationCNN

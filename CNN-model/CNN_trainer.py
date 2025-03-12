@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import torch
+# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 import torch.nn as nn
 from tqdm import tqdm
 from colorama import Fore, Style
