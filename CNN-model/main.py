@@ -18,7 +18,7 @@ def main():
     num_epochs = 50
 
     # Paths
-    hdf5_path = 'cantilever-diagonal_dataset.h5'
+    hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
     json_split_path = 'dataset_split.json'
     model_save_path = 'models/topology_cnn_checkpoint.pkl'
 
