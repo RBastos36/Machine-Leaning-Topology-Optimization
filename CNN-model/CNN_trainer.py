@@ -186,7 +186,14 @@ class TopologyTrainer:
                   f'Y-displacement Loss: {metrics["y_loss"][-1]:.6f}')
 
             # Save model
-            self.save_model(epoch_idx, metrics)
+            #self.save_model(epoch_idx, metrics)
+
+            if (len(metrics['val_loss']) <= 1) or (metrics['val_loss'][-1] == min(metrics['val_loss'])):
+                # save the model
+                self.save_model(epoch_idx, metrics)
+                print(Fore.MAGENTA + "Model saved!" + Style.RESET_ALL)
+            else:
+                print(Fore.MAGENTA + "Model not saved to prevent Overfitting!" + Style.RESET_ALL)
 
             # Update plots
             self.draw(metrics)

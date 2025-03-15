@@ -10,7 +10,7 @@ import json
 import h5py
 
 from CNN_dataset import FEMDataset, calculate_dataset_statistics
-from CNN_model_node_level import TopologyOptimizationCNN
+from CNN_model_simple_node_level import TopologyOptimizationCNN
 
 
 class ModelTester:
@@ -19,7 +19,7 @@ class ModelTester:
         self.test_loader = test_loader
         self.model_path = model_path
         self.stats = stats
-        self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cpu'
         print(f'Using device: {self.device}')
 
     def load_model(self):
@@ -294,9 +294,9 @@ class ModelTester:
 
 def main():
     # Paths
-    hdf5_path = 'cantilever-diagonal_dataset.h5'
-    json_split_path = 'dataset_split.json'
-    model_path = 'models/topology_cnn_checkpoint.pkl'
+    hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
+    json_split_path = '../dataset-creation/dataset_split.json'
+    model_path = 'models/topology_simpler_cnn_model.pkl'
 
     # Parameters
     batch_size = 32

@@ -181,7 +181,7 @@ if __name__ == "__main__":
 
     # Split dataset
     try:
-        dataset_info = split_dataset(hdf5_path, output_json_path)
+        dataset_info = split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0.15)
         print("\nDataset split completed successfully!")
     except Exception as e:
         print(f"\nError splitting dataset: {str(e)}")
