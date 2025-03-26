@@ -295,15 +295,15 @@ class ModelTester:
 def main():
     # Paths
     hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
-    json_split_path = '../dataset-creation/dataset_split.json'
-    model_path = 'models/topology_simpler_cnn_model.pkl'
+    json_split_path = '../dataset-creation/dataset_split_stratified.json'
+    model_path = 'models/topology_cnn_model.pkl'
 
     # Parameters
     batch_size = 32
 
     # Calculate dataset statistics for normalization
     print("Loading dataset statistics...")
-    stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
+    #stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
 
     # Create test dataset
     print("Creating test dataset...")
@@ -311,7 +311,7 @@ def main():
         hdf5_path=hdf5_path,
         json_split_path=json_split_path,
         split='test',
-        stats=stats
+        #stats=stats
     )
 
     # Create test data loader
@@ -332,7 +332,7 @@ def main():
         model=model,
         test_loader=test_loader,
         model_path=model_path,
-        stats=stats
+        #stats=stats
     )
 
     # Load trained model
