@@ -1,4 +1,5 @@
 **/__pycache__/
+**/deprecated/
 *.h5
 *.txt
 *.json
