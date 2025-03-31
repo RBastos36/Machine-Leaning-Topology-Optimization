@@ -5,19 +5,19 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 from CNN_dataset import FEMDataset, calculate_dataset_statistics
-from CNN_model_simple_node_level import TopologyOptimizationCNN
+from CNN_model_Unet_strided_conv_node_level import TopologyOptimizationCNN
 from CNN_trainer import TopologyTrainer
 
 
 def main():
     # Hyperparameters
-    batch_size = 32
+    batch_size = 16
     learning_rate = 0.001
     num_epochs = 40
 
     # Paths
     hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
-    json_split_path = '../dataset-creation/dataset_split.json'
+    json_split_path = '../dataset-creation/dataset_split_stratified.json'
     model_save_path = 'models/topology_cnn_model.pkl'
 
     # Calculate dataset statistics for normalization

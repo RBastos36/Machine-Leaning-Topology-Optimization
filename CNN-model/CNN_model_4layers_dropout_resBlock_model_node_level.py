@@ -5,9 +5,9 @@ class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
+        # self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        # self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
 
@@ -15,17 +15,17 @@ class ResidualBlock(nn.Module):
         if in_channels != out_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, kernel_size=1),
-                nn.BatchNorm2d(out_channels)
+                # nn.BatchNorm2d(out_channels)
             )
 
     def forward(self, x):
         identity = self.shortcut(x)
         out = self.conv1(x)
-        out = self.bn1(out)
+        # out = self.bn1(out)
         out = self.relu(out)
         out = self.dropout(out)
         out = self.conv2(out)
-        out = self.bn2(out)
+        # out = self.bn2(out)
         out += identity  # Residual connection
         out = self.relu(out)
         return out
@@ -46,15 +46,15 @@ class TopologyOptimizationCNN(nn.Module):
         # Decoder
         self.decoder = nn.Sequential(
             nn.Conv2d(256, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
+            # nn.BatchNorm2d(128),
             nn.ReLU(),
 
             nn.Conv2d(128, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
+            # nn.BatchNorm2d(64),
             nn.ReLU(),
 
             nn.Conv2d(64, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
+            # nn.BatchNorm2d(32),
             nn.ReLU(),
 
             nn.Conv2d(32, 2, kernel_size=1)  # Predict X, Y displacements
