@@ -24,9 +24,12 @@ class ModelHistoryPlotter:
         plt.style.use('seaborn-v0_8-whitegrid')
         plt.rcParams['axes.prop_cycle'] = plt.cycler(
             color=['#0173B2', '#DE8F05', '#029E73', '#D55E00', '#CC78BC', '#CA9161'])
-        plt.rcParams['font.family'] = 'sans-serif'
-        plt.rcParams['axes.labelsize'] = 12
-        plt.rcParams['axes.titlesize'] = 14
+        plt.rcParams["font.family"] = "Times New Roman"
+        plt.rcParams['axes.labelsize'] = 16  # Axis label size
+        plt.rcParams['axes.titlesize'] = 14  # Title size
+        plt.rcParams['xtick.labelsize'] = 12  # X tick size
+        plt.rcParams['ytick.labelsize'] = 12  # Y tick size
+        plt.rcParams['legend.fontsize'] = 12  # Legend font size
         plt.rcParams['axes.titleweight'] = 'bold'
 
     def plot_training_history(self, metrics):
@@ -35,8 +38,8 @@ class ModelHistoryPlotter:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         epochs = range(1, len(metrics['train_loss']) + 1)
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=150)
-        fig.suptitle('Training History', fontsize=16, fontweight='bold', y=0.98)
+        # First figure: Model Loss
+        fig1, ax1 = plt.subplots(figsize=(7, 6), dpi=150)
 
         ax1.plot(epochs, metrics['train_loss'], '-', color=colors[0], linewidth=2, label='Training Loss', marker='o',
                  markersize=4)
@@ -47,8 +50,14 @@ class ModelHistoryPlotter:
         ax1.set_xlabel('Epochs')
         ax1.set_ylabel('Loss')
         ax1.grid(True, linestyle='--', alpha=0.7)
-        ax1.legend(frameon=True, fontsize=10, loc='upper right',
-                   facecolor='white', edgecolor='gray')
+        ax1.legend(frameon=True, fontsize=10, loc='upper right', facecolor='white', edgecolor='gray')
+
+        plt.tight_layout()
+        fig1.savefig("model_loss.svg")
+        plt.show()
+
+        # Second figure: Component-wise Loss
+        fig2, ax2 = plt.subplots(figsize=(7, 6), dpi=150)
 
         ax2.plot(epochs, metrics['x_loss'], '-', color=colors[2], linewidth=2, label='X-Displacement Loss', marker='o',
                  markersize=4)
@@ -59,14 +68,11 @@ class ModelHistoryPlotter:
         ax2.set_xlabel('Epochs')
         ax2.set_ylabel('Loss')
         ax2.grid(True, linestyle='--', alpha=0.7)
-        ax2.legend(frameon=True, fontsize=10, loc='upper right',
-                   facecolor='white', edgecolor='gray')
+        ax2.legend(frameon=True, fontsize=10, loc='upper right', facecolor='white', edgecolor='gray')
 
         plt.tight_layout()
-        plt.subplots_adjust(top=0.90)
+        fig2.savefig("component_loss.svg")
         plt.show()
-
-        fig.savefig("topology_Unet_strided_model.png")
 
 
 def main():

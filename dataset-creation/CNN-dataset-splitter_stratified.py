@@ -162,7 +162,7 @@ def get_all_samples(hdf5_file, problem_name, debug=True):
         raise
 
 
-def split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0.15):
+def split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0.20):
     """Stratified dataset splitting for better representation in train, validation, and test sets."""
 
     with h5py.File(hdf5_path, 'r') as f:

@@ -28,7 +28,7 @@ def fea(nelx, nely, volfrac, load_config):
     h5file = h5py.File('fem_special_bcs.h5', 'a')
 
     # ML initializations
-    model_path = 'topology_Unet_model.pkl'
+    model_path = 'models/topology_Unet_model.pkl'
     device = None
     with open('dataset-stats.json', 'r') as f:
         stats = json.load(f)

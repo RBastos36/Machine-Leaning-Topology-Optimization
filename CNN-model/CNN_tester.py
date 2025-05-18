@@ -104,70 +104,104 @@ class ModelTester:
         plt.rcParams['figure.titlesize'] = 16
 
     def visualize_predictions(self, predictions, targets, num_samples=5):
-        """Visualize model predictions against ground truth with enhanced styling"""
+        """Visualize model predictions against ground truth and error maps, saving each separately."""
         self.set_plotting_style()
 
         if self.stats is not None:
-            # Denormalize to physical units
             predictions = self.denormalize_tensor(predictions)
             targets = self.denormalize_tensor(targets)
 
-        # Select random samples to visualize
         indices = np.random.choice(len(predictions), min(num_samples, len(predictions)), replace=False)
 
-        # Use consistent colormaps for all visualizations
-        cmap_x = 'viridis'
-        cmap_y = 'plasma'
-
         for i, idx in enumerate(indices):
-            fig, axes = plt.subplots(2, 2, figsize=(12, 10), dpi=150)
+            pred = predictions[idx]
+            target = targets[idx]
+            error = pred - target
 
-            # Create a common title for the figure
-            fig.suptitle(f'Displacement Prediction Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+            # Common min/max for better comparison
+            x_min = min(target[0].min().item(), pred[0].min().item())
+            x_max = max(target[0].max().item(), pred[0].max().item())
+            y_min = min(target[1].min().item(), pred[1].min().item())
+            y_max = max(target[1].max().item(), pred[1].max().item())
 
-            # Get min and max values for consistent color scaling
-            x_min = min(targets[idx, 0].min().item(), predictions[idx, 0].min().item())
-            x_max = max(targets[idx, 0].max().item(), predictions[idx, 0].max().item())
-            y_min = min(targets[idx, 1].min().item(), predictions[idx, 1].min().item())
-            y_max = max(targets[idx, 1].max().item(), predictions[idx, 1].max().item())
+            error_x_min = error[0].min().item()
+            error_x_max = error[0].max().item()
+            error_y_min = error[1].min().item()
+            error_y_max = error[1].max().item()
 
-            # X-displacement
-            im0 = axes[0, 0].imshow(targets[idx, 0].numpy(), cmap=cmap_x, vmin=x_min, vmax=x_max)
-            axes[0, 0].set_title("Ground Truth - X Displacement")
-            axes[0, 0].set_xticks([])  # Hide ticks for cleaner look
-            axes[0, 0].set_yticks([])
-            cbar0 = plt.colorbar(im0, ax=axes[0, 0], fraction=0.046, pad=0.04)
-            cbar0.ax.tick_params(labelsize=9)
+            ## === Ground Truth Figure ===
+            fig_gt, axes_gt = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
+            fig_gt.suptitle(f'Ground Truth Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
-            im1 = axes[0, 1].imshow(predictions[idx, 0].numpy(), cmap=cmap_x, vmin=x_min, vmax=x_max)
-            axes[0, 1].set_title("Prediction - X Displacement")
-            axes[0, 1].set_xticks([])
-            axes[0, 1].set_yticks([])
-            cbar1 = plt.colorbar(im1, ax=axes[0, 1], fraction=0.046, pad=0.04)
-            cbar1.ax.tick_params(labelsize=9)
+            im_gt_x = axes_gt[0].imshow(target[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
+            axes_gt[0].set_title("Ground Truth - X Displacement")
+            axes_gt[0].set_xticks([])
+            axes_gt[0].set_yticks([])
+            cbar_gt_x = plt.colorbar(im_gt_x, ax=axes_gt[0], fraction=0.046, pad=0.04)
+            cbar_gt_x.ax.tick_params(labelsize=9)
 
-            # Y-displacement
-            im2 = axes[1, 0].imshow(targets[idx, 1].numpy(), cmap=cmap_y, vmin=y_min, vmax=y_max)
-            axes[1, 0].set_title("Ground Truth - Y Displacement")
-            axes[1, 0].set_xticks([])
-            axes[1, 0].set_yticks([])
-            cbar2 = plt.colorbar(im2, ax=axes[1, 0], fraction=0.046, pad=0.04)
-            cbar2.ax.tick_params(labelsize=9)
-
-            im3 = axes[1, 1].imshow(predictions[idx, 1].numpy(), cmap=cmap_y, vmin=y_min, vmax=y_max)
-            axes[1, 1].set_title("Prediction - Y Displacement")
-            axes[1, 1].set_xticks([])
-            axes[1, 1].set_yticks([])
-            cbar3 = plt.colorbar(im3, ax=axes[1, 1], fraction=0.046, pad=0.04)
-            cbar3.ax.tick_params(labelsize=9)
+            im_gt_y = axes_gt[1].imshow(target[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
+            axes_gt[1].set_title("Ground Truth - Y Displacement")
+            axes_gt[1].set_xticks([])
+            axes_gt[1].set_yticks([])
+            cbar_gt_y = plt.colorbar(im_gt_y, ax=axes_gt[1], fraction=0.046, pad=0.04)
+            cbar_gt_y.ax.tick_params(labelsize=9)
 
             plt.tight_layout()
-            plt.subplots_adjust(top=0.92)  # Adjust for suptitle
-            plt.savefig(f"prediction_sample_{i}.png", dpi=300, bbox_inches='tight')
-            plt.savefig(f"prediction_sample_{i}.svg", bbox_inches='tight')
-            plt.close()
+            plt.subplots_adjust(top=0.92)
+            plt.savefig(f"sample_{i}_ground_truth.png", dpi=300, bbox_inches='tight')
+            plt.savefig(f"sample_{i}_ground_truth.svg", bbox_inches='tight')
+            plt.close(fig_gt)
 
-        print(f"Saved {len(indices)} visualization samples as PNG and SVG files")
+            ## === Prediction Figure ===
+            fig_pred, axes_pred = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
+            fig_pred.suptitle(f'Predicted Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+
+            im_pred_x = axes_pred[0].imshow(pred[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
+            axes_pred[0].set_title("Prediction - X Displacement")
+            axes_pred[0].set_xticks([])
+            axes_pred[0].set_yticks([])
+            cbar_pred_x = plt.colorbar(im_pred_x, ax=axes_pred[0], fraction=0.046, pad=0.04)
+            cbar_pred_x.ax.tick_params(labelsize=9)
+
+            im_pred_y = axes_pred[1].imshow(pred[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
+            axes_pred[1].set_title("Prediction - Y Displacement")
+            axes_pred[1].set_xticks([])
+            axes_pred[1].set_yticks([])
+            cbar_pred_y = plt.colorbar(im_pred_y, ax=axes_pred[1], fraction=0.046, pad=0.04)
+            cbar_pred_y.ax.tick_params(labelsize=9)
+
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.92)
+            plt.savefig(f"sample_{i}_prediction.png", dpi=300, bbox_inches='tight')
+            plt.savefig(f"sample_{i}_prediction.svg", bbox_inches='tight')
+            plt.close(fig_pred)
+
+            ## === Error Figure ===
+            fig_err, axes_err = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
+            fig_err.suptitle(f'Displacement Error Maps - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+
+            im_err_x = axes_err[0].imshow(error[0].numpy(), cmap='seismic', vmin=error_x_min, vmax=error_x_max)
+            axes_err[0].set_title("Error - X Displacement (Prediction - Ground Truth)")
+            axes_err[0].set_xticks([])
+            axes_err[0].set_yticks([])
+            cbar_err_x = plt.colorbar(im_err_x, ax=axes_err[0], fraction=0.046, pad=0.04)
+            cbar_err_x.ax.tick_params(labelsize=9)
+
+            im_err_y = axes_err[1].imshow(error[1].numpy(), cmap='seismic', vmin=error_y_min, vmax=error_y_max)
+            axes_err[1].set_title("Error - Y Displacement (Prediction - Ground Truth)")
+            axes_err[1].set_xticks([])
+            axes_err[1].set_yticks([])
+            cbar_err_y = plt.colorbar(im_err_y, ax=axes_err[1], fraction=0.046, pad=0.04)
+            cbar_err_y.ax.tick_params(labelsize=9)
+
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.92)
+            plt.savefig(f"sample_{i}_error.png", dpi=300, bbox_inches='tight')
+            plt.savefig(f"sample_{i}_error.svg", bbox_inches='tight')
+            plt.close(fig_err)
+
+        print(f"Saved {len(indices)} samples: ground truth, prediction, and error maps as PNG and SVG files each.")
 
     def analyze_error_distribution(self, predictions, targets):
         """Analyze the error distribution across the test set with enhanced styling"""
