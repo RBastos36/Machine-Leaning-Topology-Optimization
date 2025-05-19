@@ -177,7 +177,6 @@ def fea(nelx, nely, volfrac, load_config):
             # Save initial domain
             setup.create_dataset('initial_domain', data=x_0.reshape((nelx, nely)).T)
 
-
         # Setup and solve FE problem
         sK = ((KE.flatten()[np.newaxis]).T * (Emin + xPhys ** penal * (Emax - Emin))).flatten(order='F')
         K = coo_matrix((sK, (iK, jK)), shape=(ndof, ndof)).tocsc()
@@ -198,10 +197,18 @@ def fea(nelx, nely, volfrac, load_config):
         u_y_ml = prediction[0].cpu().numpy()[1, :, :]
         u_ml = combine_displacement_matrices(u_x_ml, u_y_ml)
 
-
         # Objective and sensitivity
         ce[:] = (np.dot(u[edofMat].reshape(nelx * nely, 8), KE) * u[edofMat].reshape(nelx * nely, 8)).sum(1)
         obj = ((Emin + xPhys ** penal * (Emax - Emin)) * ce).sum()
+
+        # Calculate ML compliance energy
+        # Reshape u_ml to match edofMat shape for element-wise computation
+        ce_ml = np.zeros(nely * nelx)
+        u_ml_reshaped = np.zeros_like(u)
+        u_ml_reshaped[:len(u_ml)] = u_ml.reshape(-1, 1)
+        ce_ml[:] = (np.dot(u_ml_reshaped[edofMat].reshape(nelx * nely, 8), KE) *
+                    u_ml_reshaped[edofMat].reshape(nelx * nely, 8)).sum(1)
+        obj_ml = ((Emin + xPhys ** penal * (Emax - Emin)) * ce_ml).sum()
 
         # Plot to screen
         # im.set_array(-xPhys.reshape((nelx, nely)).T)
@@ -211,6 +218,7 @@ def fea(nelx, nely, volfrac, load_config):
 
         print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
             loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
+        print(f"ML obj.: {obj_ml:.3f}")
 
         # Split displacements into x and y components
         u_x, u_y = create_displacement_matrices(u, nelx, nely)
@@ -231,6 +239,35 @@ def fea(nelx, nely, volfrac, load_config):
             displacements.create_dataset('y_ML', data=u_y_ml, compression='gzip')
 
             iter_data.attrs['compliance'] = float(obj)
+            iter_data.attrs['compliance_ML'] = float(obj_ml)
+
+            # Save compliance energy
+            compliance = iter_data.create_group('compliance')
+            ce_reshaped = ce.reshape(nelx, nely).T
+            ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
+            compliance.create_dataset('ce', data=ce_reshaped, compression='gzip')
+            compliance.create_dataset('ce_ML', data=ce_ml_reshaped, compression='gzip')
+
+        # Calculate normalized differences
+        # Add a small epsilon to avoid division by zero
+        epsilon = 1e-10
+
+        # For displacements, we need to handle areas where the original displacement is near zero
+        # We'll use absolute difference where original values are very small
+        delta_u_x_norm = np.divide(u_x - u_x_ml, np.abs(u_x) + epsilon)
+        delta_u_y_norm = np.divide(u_y - u_y_ml, np.abs(u_y) + epsilon)
+
+        # For compliance energy
+        ce_reshaped = ce.reshape(nelx, nely).T
+        ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
+        delta_ce_norm = np.divide(ce_reshaped - ce_ml_reshaped, np.abs(ce_reshaped) + epsilon)
+
+        # For sensitivity (dc), we would need to calculate it first
+        # Since it's not directly available from the simulation, we'll use ce as a proxy
+        # In the actual optimization, dc would be calculated differently
+        dc = ce_reshaped * (Emin + xPhys.reshape(nelx, nely).T ** penal * (Emax - Emin))
+        dc_ml = ce_ml_reshaped * (Emin + xPhys.reshape(nelx, nely).T ** penal * (Emax - Emin))
+        delta_dc_norm = np.divide(dc - dc_ml, np.abs(dc) + epsilon)
 
         # Plot displacement fields
         fig, axs = plt.subplots(1, 2, figsize=(10, 4))
@@ -254,7 +291,7 @@ def fea(nelx, nely, volfrac, load_config):
         fig2.colorbar(im2, ax=axs2[1])
         fig2.suptitle("MLTO displacements")
 
-        # Plot diferences
+        # Plot absolute differences
         fig3, axs3 = plt.subplots(1, 2, figsize=(10, 4))
         im3 = axs3[0].imshow(abs(u_x - u_x_ml), cmap='binary', interpolation='none')
         axs3[0].set_title("Displacement in X-direction")
@@ -265,9 +302,38 @@ def fea(nelx, nely, volfrac, load_config):
         fig3.colorbar(im3, ax=axs3[1])
         fig3.suptitle("Absolute differences")
 
+        # Plot normalized differences in displacement
+        fig4, axs4 = plt.subplots(1, 2, figsize=(10, 4))
+        # Use a symmetric colormap with limits to better visualize differences
+        vmin, vmax = -1, 1  # For normalized data, -1 to 1 is often sufficient
+        im4 = axs4[0].imshow(delta_u_x_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs4[0].set_title("Normalized X-displacement Difference")
+        fig4.colorbar(im4, ax=axs4[0])
+
+        im4 = axs4[1].imshow(delta_u_y_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs4[1].set_title("Normalized Y-displacement Difference")
+        fig4.colorbar(im4, ax=axs4[1])
+        fig4.suptitle("Normalized Displacement Differences (SIMP-ML)/SIMP")
+
+        # Plot normalized differences in compliance energy
+        fig5, axs5 = plt.subplots(figsize=(8, 6))
+        im5 = axs5.imshow(delta_ce_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs5.set_title("Normalized Compliance Energy Difference (SIMP-ML)/SIMP")
+        fig5.colorbar(im5, ax=axs5)
+
+        # Plot normalized differences in sensitivity
+        fig6, axs6 = plt.subplots(figsize=(8, 6))
+        im6 = axs6.imshow(delta_dc_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs6.set_title("Normalized Sensitivity Difference (SIMP-ML)/SIMP")
+        fig6.colorbar(im6, ax=axs6)
+
+        # Save all figures
         fig.savefig("01_FEM_SIMP_displacements.png")
         fig2.savefig("02_FEM_MLTO_displacements.png")
         fig3.savefig("03_FEM_Diff_displacements.png")
+        fig4.savefig("04_FEM_Norm_Diff_displacements.png")
+        fig5.savefig("05_FEM_Norm_Diff_compliance.png")
+        fig6.savefig("06_FEM_Norm_Diff_sensitivity.png")
 
         plt.pause(0.001)
         plt.tight_layout()
@@ -279,6 +345,7 @@ def fea(nelx, nely, volfrac, load_config):
             results = prob_group.create_group('results')
             results.create_dataset('final_domain', data=xPhys.reshape((nelx, nely)).T, compression='gzip')
             results.attrs['final_compliance'] = float(obj)
+            results.attrs['final_compliance_ML'] = float(obj_ml)
             results.attrs['total_iterations'] = loop
 
     finally:
@@ -440,4 +507,4 @@ if __name__ == "__main__":
         'vertical_magnitude': 50
     }
 
-    xPhys, obj = fea( nelx, nely, volfrac, load_config)
+    xPhys, obj = fea(nelx, nely, volfrac, load_config)
