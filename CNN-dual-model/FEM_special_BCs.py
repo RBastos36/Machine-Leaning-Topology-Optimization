@@ -28,24 +28,35 @@ def fea(nelx, nely, volfrac, load_config):
     h5file = h5py.File('fem_special_bcs.h5', 'a')
 
     # ML initializations
-    model_path = 'models/topology_Unet_model.pkl'
+    model_path_x = 'models/topology_Unet_model_x.pkl'
+    model_path_y = 'models/topology_Unet_model_y.pkl'
     device = None
-    with open('dataset-stats.json', 'r') as f:
-        stats = json.load(f)
+    with open('dataset_stats_x.json', 'r') as f:
+        stats_x = json.load(f)
+    with open('dataset_stats_y.json', 'r') as f:
+        stats_y = json.load(f)
 
     # Initialize model
-    model = TopologyOptimizationCNN()
+    model_x = TopologyOptimizationCNN()
+    model_y = TopologyOptimizationCNN()
 
     # Initialize tester
-    tester = SingleInstanceTester(
-        model=model,
-        model_path=model_path,
-        stats=stats,
+    tester_x = SingleInstanceTester(
+        model=model_x,
+        model_path=model_path_x,
+        stats=stats_x,
+        device=device
+    )
+    tester_y = SingleInstanceTester(
+        model=model_y,
+        model_path=model_path_y,
+        stats=stats_y,
         device=device
     )
 
     # Load trained model
-    metrics = tester.load_model()
+    metrics = tester_x.load_model()
+    metrics = tester_y.load_model()
 
     try:
         problem_id = generate_problem_id(nelx, nely, volfrac, rmin, load_config)
@@ -131,7 +142,7 @@ def fea(nelx, nely, volfrac, load_config):
         f = np.zeros((ndof, 1))
 
         # Calculate load position
-        rel_position = 1  # Between 0 and 1
+        rel_position = load_config['position']  # Between 0 and 1
         node_y_pos = int(rel_position * nely)
         node_index = nelx * (nely + 1) + node_y_pos
 
@@ -192,9 +203,10 @@ def fea(nelx, nely, volfrac, load_config):
         domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
         domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
         input_tensor = np.stack([domain, fixed_x, fixed_y, loads_x, loads_y], axis=0)
-        prediction = tester.predict_single_instance(input_tensor)
-        u_x_ml = prediction[0].cpu().numpy()[0, :, :]
-        u_y_ml = prediction[0].cpu().numpy()[1, :, :]
+        prediction_x = tester_x.predict_single_instance(input_tensor)
+        prediction_y = tester_y.predict_single_instance(input_tensor)
+        u_x_ml = prediction_x[0].cpu().numpy()[0, :, :]
+        u_y_ml = prediction_y[0].cpu().numpy()[0, :, :]
         u_ml = combine_displacement_matrices(u_x_ml, u_y_ml)
 
         # Objective and sensitivity
@@ -337,8 +349,8 @@ def fea(nelx, nely, volfrac, load_config):
 
         plt.pause(0.001)
         plt.tight_layout()
-        plt.show(block=False)
-        input("Press any key...")
+        # plt.show(block=False)
+        # input("Press any key...")
 
         # Save final results
         if 'results' not in prob_group:
@@ -494,7 +506,7 @@ def combine_displacement_matrices(u_x, u_y):
 
 if __name__ == "__main__":
     # Default input parameters
-    volfrac = 1
+    volfrac = 0.5
     rmin = 5.4
     penal = 3.0
     nelx = 180
@@ -502,8 +514,8 @@ if __name__ == "__main__":
 
     # Load configuration
     load_config = {
-        'position': 0,
-        'horizontal_magnitude': 30,
+        'position': 1,
+        'horizontal_magnitude': 50,
         'vertical_magnitude': 50
     }
 

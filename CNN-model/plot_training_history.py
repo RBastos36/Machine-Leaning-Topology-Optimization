@@ -46,7 +46,6 @@ class ModelHistoryPlotter:
         ax1.plot(epochs, metrics['val_loss'], '-', color=colors[1], linewidth=2, label='Validation Loss', marker='s',
                  markersize=4)
         ax1.fill_between(epochs, metrics['train_loss'], metrics['val_loss'], alpha=0.1, color=colors[1])
-        ax1.set_title('Model Loss')
         ax1.set_xlabel('Epochs')
         ax1.set_ylabel('Loss')
         ax1.grid(True, linestyle='--', alpha=0.7)

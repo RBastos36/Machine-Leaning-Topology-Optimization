@@ -26,24 +26,35 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     h5file = h5py.File('cantilever_diagonal_framework.h5', 'a')
 
     # ML initializations
-    model_path = 'topology_Unet_model.pkl'
+    model_path_x = 'models/topology_Unet_model_x.pkl'
+    model_path_y = 'models/topology_Unet_model_y.pkl'
     device = None
-    with open('dataset-stats.json', 'r') as f:
-        stats = json.load(f)
+    with open('dataset_stats_x.json', 'r') as f:
+        stats_x = json.load(f)
+    with open('dataset_stats_y.json', 'r') as f:
+        stats_y = json.load(f)
 
     # Initialize model
-    model = TopologyOptimizationCNN()
+    model_x = TopologyOptimizationCNN()
+    model_y = TopologyOptimizationCNN()
 
     # Initialize tester
-    tester = SingleInstanceTester(
-        model=model,
-        model_path=model_path,
-        stats=stats,
+    tester_x = SingleInstanceTester(
+        model=model_x,
+        model_path=model_path_x,
+        stats=stats_x,
+        device=device
+    )
+    tester_y = SingleInstanceTester(
+        model=model_y,
+        model_path=model_path_y,
+        stats=stats_y,
         device=device
     )
 
     # Load trained model
-    metrics = tester.load_model()
+    metrics = tester_x.load_model()
+    metrics = tester_y.load_model()
 
     try:
         problem_id = generate_problem_id(nelx, nely, volfrac, rmin, load_config)
@@ -179,9 +190,10 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
             domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
             input_tensor = np.stack([domain, loads_x, loads_y, fixed_x, fixed_y], axis=0)
-            prediction = tester.predict_single_instance(input_tensor)
-            u_x = prediction[0].cpu().numpy()[0, :, :]
-            u_y = prediction[0].cpu().numpy()[1, :, :]
+            prediction_x = tester_x.predict_single_instance(input_tensor)
+            prediction_y = tester_y.predict_single_instance(input_tensor)
+            u_x = prediction_x[0].cpu().numpy()[0, :, :]
+            u_y = prediction_y[0].cpu().numpy()[0, :, :]
             u = combine_displacement_matrices(u_x, u_y)
 
             # Objective and sensitivity
@@ -232,6 +244,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
                     displacements.create_dataset('y', data=u_y, compression='gzip')
 
                     iter_data.attrs['compliance'] = float(obj)
+            # input()
 
         plt.show()
         input("Press any key...")
@@ -410,18 +423,15 @@ if __name__ == "__main__":
     # Default input parameters
     nelx = 180
     nely = 60
-    volfrac = 0.5
+    volfrac = 0.3
     rmin = 5.4
     penal = 3.0
     ft = 0  # ft==0 -> sens, ft==1 -> dens
 
-    # Example: 30-degree diagonal load pointing down and left
-    magnitude = -1.0
-    angle = 90  # degrees
     load_config = {
         'position': 1,
-        'horizontal_magnitude': 0,
-        'vertical_magnitude': 10
+        'horizontal_magnitude': 50,
+        'vertical_magnitude': 50
     }
 
     xPhys, obj = topopt(nelx, nely, volfrac, penal, rmin, ft, load_config)

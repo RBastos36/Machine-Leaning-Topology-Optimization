@@ -6,9 +6,9 @@ import json
 import torch.nn as nn
 import torch.nn.init as init
 
-from CNN_dataset_x import FEMDataset, calculate_dataset_statistics
+from CNN_dataset_y import FEMDataset, calculate_dataset_statistics
 from CNN_model_Unet_node_level import TopologyOptimizationCNN
-from CNN_trainer_x import TopologyTrainer
+from CNN_trainer_y import TopologyTrainer
 
 
 def initialize_weights_kaiming(layer):
@@ -27,13 +27,13 @@ def main():
     # Paths
     hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
     json_split_path = '../dataset-creation/dataset_split_stratified.json'
-    model_save_path = 'models/topology_Unet_model_x.pkl'
+    model_save_path = 'models/topology_Unet_model_y.pkl'
 
     # Calculate dataset statistics for normalization
     print("Calculating dataset statistics...")
     stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
 
-    with open("dataset_stats_x.json", "w") as outfile:
+    with open("dataset_stats_y.json", "w") as outfile:
         json.dump(stats, outfile)
 
     # Create datasets

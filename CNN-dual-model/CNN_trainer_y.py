@@ -63,7 +63,7 @@ class TopologyTrainer:
     def compute_component_losses(self, predicted, target):
         """Compute separate losses for x and y displacement components"""
         # Option 1: Calculate loss in normalized space (current behavior)
-        y_loss = nn.MSELoss()(predicted[:, 1, :, :], target[:, 1, :, :])
+        y_loss = nn.MSELoss()(predicted[:, 0, :, :], target[:, 0, :, :])
 
         # Option 2: Calculate loss in physical space (if stats are available)
         if self.stats is not None:
