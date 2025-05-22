@@ -69,13 +69,16 @@ class ModelHistoryPlotter:
         ax2.grid(True, linestyle='--', alpha=0.7)
         ax2.legend(frameon=True, fontsize=10, loc='upper right', facecolor='white', edgecolor='gray')
 
+        print([float(x) for x in metrics['val_loss']])
+        print(min([float(x) for x in metrics['val_loss']]))
+
         plt.tight_layout()
         fig2.savefig("component_loss.svg")
         plt.show()
 
 
 def main():
-    model_path = 'models/topology_Unet_strided_model.pkl'
+    model_path = 'models/topology_Unet_model_valid_pad.pkl'
     plotter = ModelHistoryPlotter(model_path)
     metrics = plotter.load_model()
     plotter.plot_training_history(metrics)
