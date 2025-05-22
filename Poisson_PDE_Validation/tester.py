@@ -20,31 +20,45 @@ def compute_residual(u_pred, f_input):
     return laplace_u - f_input
 
 
-def visualize_sample(input_tensor, u_true, u_pred, residual):
+def visualize_sample(input_tensor, u_true, u_pred, residual, i):
     domain_mask = input_tensor[0].cpu().numpy()
     f = input_tensor[1].cpu().numpy()
     u_true = u_true.squeeze().cpu().numpy()
     u_pred = u_pred.squeeze().detach().cpu().numpy()
     residual = residual.squeeze().cpu().numpy()
 
+    data = [f, u_true, u_pred, residual]
+    cmap = ['coolwarm', 'viridis', 'viridis', 'inferno']
+    titles = ['f(x, y)', 'u true', 'u predicted', 'Residual (∇²û - f)']
+
     fig, axs = plt.subplots(1, 4, figsize=(16, 4))
-    axs[0].imshow(f, cmap='coolwarm');
-    axs[0].set_title("f(x, y)")
-    axs[1].imshow(u_true, cmap='viridis');
-    axs[1].set_title("u true")
-    axs[2].imshow(u_pred, cmap='viridis');
-    axs[2].set_title("u predicted")
-    axs[3].imshow(residual, cmap='inferno');
-    axs[3].set_title("Residual (∇²û - f)")
-    for ax in axs: ax.axis('off')
+
+    for j in range(4):
+        cax = axs[j].imshow(data[j], cmap=cmap[j])
+        fig.colorbar(cax, ax=axs[j], fraction=0.046, pad=0.04)
+        axs[j].axis('off')
+        axs[j].set_title(titles[j])
+
     plt.tight_layout()
+
+    plt.savefig(f'Combined_Figure_{i}.png', format='svg')
+
+    for  j in range(4):
+        fig, ax = plt.subplots(figsize=(4, 4))
+        cax = ax.imshow(data[j], cmap=cmap[j])
+        fig.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
+        ax.axis('off')  # Hide axes
+
+        plt.savefig(f'Subplot_{j + 1}_{i}.svg', format='svg', bbox_inches='tight')
+        plt.close(fig)
+
     plt.show()
 
 
 def test_model(model_path, device='cuda' if torch.cuda.is_available() else 'cpu'):
     # Load model
     model = TopologyOptimizationCNN()  # Adjust if yours is different
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False)['model_state_dict'])
     model.to(device)
     model.eval()
 
@@ -63,7 +77,7 @@ def test_model(model_path, device='cuda' if torch.cuda.is_available() else 'cpu'
             residual = compute_residual(u_pred, f_input)
 
         print(f"Sample {i + 1}")
-        visualize_sample(input_tensor[0], u_true[0], u_pred[0], residual[0])
+        visualize_sample(input_tensor[0], u_true[0], u_pred[0], residual[0], i)
 
         if i >= 4:  # limit to 5 samples
             break
@@ -71,7 +85,7 @@ def test_model(model_path, device='cuda' if torch.cuda.is_available() else 'cpu'
 
 if __name__ == '__main__':
     # Path to your pre-trained model
-    model_file = 'checkpoints/best_model.pth'  # Change if needed
+    model_file = 'models/topology_Unet_model_Poisson.pkl'
 
     if not os.path.exists(model_file):
         raise FileNotFoundError(f"Model file not found at {model_file}")
