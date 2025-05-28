@@ -231,6 +231,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
                 loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
 
+            if loop == 1 or loop == 10 or loop == 100 or loop == 1000:
+                fig.savefig(f"iter_{loop}.svg", bbox_inches='tight')
+
             # Save iteration data periodically
             if loop <= 10 or 2 ** (int(math.log2(loop))) == loop:
                 iter_group_name = f'iter_{loop}'
@@ -430,7 +433,7 @@ if __name__ == "__main__":
 
     load_config = {
         'position': 1,
-        'horizontal_magnitude': 50,
+        'horizontal_magnitude': 0,
         'vertical_magnitude': 50
     }
 

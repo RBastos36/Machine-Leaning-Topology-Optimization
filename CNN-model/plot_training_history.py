@@ -25,11 +25,11 @@ class ModelHistoryPlotter:
         plt.rcParams['axes.prop_cycle'] = plt.cycler(
             color=['#0173B2', '#DE8F05', '#029E73', '#D55E00', '#CC78BC', '#CA9161'])
         plt.rcParams["font.family"] = "Times New Roman"
-        plt.rcParams['axes.labelsize'] = 16  # Axis label size
-        plt.rcParams['axes.titlesize'] = 14  # Title size
-        plt.rcParams['xtick.labelsize'] = 12  # X tick size
-        plt.rcParams['ytick.labelsize'] = 12  # Y tick size
-        plt.rcParams['legend.fontsize'] = 12  # Legend font size
+        plt.rcParams['axes.labelsize'] = 24  # Axis label size
+        plt.rcParams['axes.titlesize'] = 18  # Title size
+        plt.rcParams['xtick.labelsize'] = 18  # X tick size
+        plt.rcParams['ytick.labelsize'] = 18  # Y tick size
+        plt.rcParams['legend.fontsize'] = 20  # Legend font size
         plt.rcParams['axes.titleweight'] = 'bold'
 
     def plot_training_history(self, metrics):
@@ -49,7 +49,7 @@ class ModelHistoryPlotter:
         ax1.set_xlabel('Epochs')
         ax1.set_ylabel('Loss')
         ax1.grid(True, linestyle='--', alpha=0.7)
-        ax1.legend(frameon=True, fontsize=10, loc='upper right', facecolor='white', edgecolor='gray')
+        ax1.legend(frameon=True, loc='upper right', facecolor='white', edgecolor='gray')
 
         plt.tight_layout()
         fig1.savefig("model_loss.svg")
@@ -63,14 +63,15 @@ class ModelHistoryPlotter:
         ax2.plot(epochs, metrics['y_loss'], '-', color=colors[3], linewidth=2, label='Y-Displacement Loss', marker='s',
                  markersize=4)
         ax2.fill_between(epochs, metrics['x_loss'], metrics['y_loss'], alpha=0.1, color=colors[3])
-        ax2.set_title('Component-wise Loss')
         ax2.set_xlabel('Epochs')
         ax2.set_ylabel('Loss')
         ax2.grid(True, linestyle='--', alpha=0.7)
-        ax2.legend(frameon=True, fontsize=10, loc='upper right', facecolor='white', edgecolor='gray')
+        ax2.legend(frameon=True, loc='upper right', facecolor='white', edgecolor='gray')
 
         print([float(x) for x in metrics['val_loss']])
         print(min([float(x) for x in metrics['val_loss']]))
+        print(min([float(x) for x in metrics['x_loss']]))
+        print(min([float(x) for x in metrics['y_loss']]))
 
         plt.tight_layout()
         fig2.savefig("component_loss.svg")
@@ -78,7 +79,7 @@ class ModelHistoryPlotter:
 
 
 def main():
-    model_path = 'models/topology_Unet_model_valid_pad.pkl'
+    model_path = 'models/topology_Unet_model_Hybrid_Padding.pkl'
     plotter = ModelHistoryPlotter(model_path)
     metrics = plotter.load_model()
     plotter.plot_training_history(metrics)

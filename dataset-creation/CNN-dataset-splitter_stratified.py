@@ -162,7 +162,7 @@ def get_all_samples(hdf5_file, problem_name, debug=True):
         raise
 
 
-def split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0.20):
+def split_dataset(hdf5_path, output_json_path, train_size=0.8, validation_size=0.15):
     """Stratified dataset splitting for better representation in train, validation, and test sets."""
 
     with h5py.File(hdf5_path, 'r') as f:
@@ -260,8 +260,8 @@ def split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0
 
 
 if __name__ == "__main__":
-    hdf5_path = "cantilever-diagonal_dataset.h5"
-    output_json_path = "dataset_split_stratified.json"
+    hdf5_path = "TESTING_NO_PENAL.h5"
+    output_json_path = "SPLIT_TESTING_NO_PENAL.json"
 
     try:
         dataset_info = split_dataset(hdf5_path, output_json_path)

@@ -12,6 +12,31 @@ import h5py
 from ML_framework import *
 
 
+def extrapolate_domain_uniform(domain):
+    """
+    Extrapolate element-wise domain to nodal grid using uniform averaging.
+    domain: (H, W) numpy array of element-wise densities
+    returns: (H+1, W+1) numpy array of node-wise densities
+    """
+    H, W = domain.shape
+    nodal = np.zeros((H+1, W+1))
+    counts = np.zeros((H+1, W+1))
+
+    for i in range(H):
+        for j in range(W):
+            e_density = domain[i, j]
+            # Share equally to the 4 surrounding nodes
+            for dy in [0, 1]:
+                for dx in [0, 1]:
+                    n_y = i + dy
+                    n_x = j + dx
+                    nodal[n_y, n_x] += e_density
+                    counts[n_y, n_x] += 1
+
+    nodal /= np.maximum(counts, 1e-8)
+    return nodal
+
+
 def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     print("Minimum compliance problem with OC")
     print("ndes: " + str(nelx) + " x " + str(nely))
@@ -26,9 +51,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     h5file = h5py.File('cantilever_diagonal_framework.h5', 'a')
 
     # ML initializations
-    model_path = 'topology_Unet_model.pkl'
+    model_path = '../CNN-model/models/topology_Unet_model_node_domain.pkl'
     device = None
-    with open('dataset-stats.json', 'r') as f:
+    with open('../CNN-model/dataset_stats_node_domain.json', 'r') as f:
         stats = json.load(f)
 
     # Initialize model
@@ -135,18 +160,18 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         # Solution and RHS vectors
         u = np.zeros((ndof, 1))
 
+        loop = 0
+        change = 1
+        dv = np.ones(nely * nelx)
+        dc = np.ones(nely * nelx)
+        ce = np.ones(nely * nelx)
+
         # Initialize plot
         plt.ion()
         fig, ax = plt.subplots()
         im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
                        norm=colors.Normalize(vmin=-1, vmax=0))
         plt.show(block=False)
-
-        loop = 0
-        change = 1
-        dv = np.ones(nely * nelx)
-        dc = np.ones(nely * nelx)
-        ce = np.ones(nely * nelx)
 
         # Split matrices into x and y components
         fixed_x, fixed_y = create_xy_matrices(fixed, nelx, nely)
@@ -176,8 +201,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             loop = loop + 1
             # Substitute FEM displacements by the U-Net model
             xPhys_2_save = xPhys
-            domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
-            domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
+            # domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
+            # domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
+            domain = extrapolate_domain_uniform(xPhys.reshape((nelx, nely)).T)
             input_tensor = np.stack([domain, loads_x, loads_y, fixed_x, fixed_y], axis=0)
             prediction = tester.predict_single_instance(input_tensor)
             u_x = prediction[0].cpu().numpy()[0, :, :]
@@ -218,6 +244,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
 
             print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
                 loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
+
+            if loop == 1 or loop == 10 or loop == 100 or loop == 1000:
+                fig.savefig(f"iter_{loop}_node_domain.svg", bbox_inches='tight')
 
             # Save iteration data periodically
             if loop <= 10 or 2 ** (int(math.log2(loop))) == loop:
@@ -421,7 +450,7 @@ if __name__ == "__main__":
     load_config = {
         'position': 1,
         'horizontal_magnitude': 0,
-        'vertical_magnitude': 10
+        'vertical_magnitude': 50
     }
 
     xPhys, obj = topopt(nelx, nely, volfrac, penal, rmin, ft, load_config)

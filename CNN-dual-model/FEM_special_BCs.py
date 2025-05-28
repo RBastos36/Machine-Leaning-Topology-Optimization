@@ -90,6 +90,8 @@ def fea(nelx, nely, volfrac, load_config):
         xPhys = x.copy()
 
         g = 0  # must be initialized to use the NGuyen/Paulino OC approach
+        dc = np.ones(nely * nelx)
+        dc_ml = np.ones(nely * nelx)
 
         # FE: Build the index vectors for the for coo matrix format.
         # KE = lk(E / A0, nu, A0)
@@ -274,11 +276,8 @@ def fea(nelx, nely, volfrac, load_config):
         ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
         delta_ce_norm = np.divide(ce_reshaped - ce_ml_reshaped, np.abs(ce_reshaped) + epsilon)
 
-        # For sensitivity (dc), we would need to calculate it first
-        # Since it's not directly available from the simulation, we'll use ce as a proxy
-        # In the actual optimization, dc would be calculated differently
-        dc = ce_reshaped * (Emin + xPhys.reshape(nelx, nely).T ** penal * (Emax - Emin))
-        dc_ml = ce_ml_reshaped * (Emin + xPhys.reshape(nelx, nely).T ** penal * (Emax - Emin))
+        dc[:] = (-penal * xPhys ** (penal - 1) * (Emax - Emin)) * ce
+        dc_ml[:] = (-penal * xPhys ** (penal - 1) * (Emax - Emin)) * ce_ml
         delta_dc_norm = np.divide(dc - dc_ml, np.abs(dc) + epsilon)
 
         # Plot displacement fields
@@ -334,10 +333,22 @@ def fea(nelx, nely, volfrac, load_config):
         fig5.colorbar(im5, ax=axs5)
 
         # Plot normalized differences in sensitivity
-        fig6, axs6 = plt.subplots(figsize=(8, 6))
-        im6 = axs6.imshow(delta_dc_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
-        axs6.set_title("Normalized Sensitivity Difference (SIMP-ML)/SIMP")
-        fig6.colorbar(im6, ax=axs6)
+        # fig6, axs6 = plt.subplots(figsize=(8, 6))
+        # im6 = axs6.imshow(delta_dc_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        # axs6.set_title("Normalized Sensitivity Difference (SIMP-ML)/SIMP")
+        # fig6.colorbar(im6, ax=axs6)
+
+        plt.tight_layout()
+        plt.rcParams['font.family'] = 'Times New Roman'
+        plt.rcParams['font.size'] = 14
+
+        fig7, axs7 = plt.subplots(figsize=(6, 2))
+        im7 = axs7.imshow(dc.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
+        fig7.colorbar(im7, ax=axs7, fraction=0.046, pad=0.04, aspect=10)
+
+        fig8, axs8 = plt.subplots(figsize=(6, 2))
+        im8 = axs8.imshow(dc_ml.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
+        fig8.colorbar(im8, ax=axs8, fraction=0.046, pad=0.04, aspect=10)
 
         # Save all figures
         fig.savefig("01_FEM_SIMP_displacements.png")
@@ -345,7 +356,9 @@ def fea(nelx, nely, volfrac, load_config):
         fig3.savefig("03_FEM_Diff_displacements.png")
         fig4.savefig("04_FEM_Norm_Diff_displacements.png")
         fig5.savefig("05_FEM_Norm_Diff_compliance.png")
-        fig6.savefig("06_FEM_Norm_Diff_sensitivity.png")
+        # fig6.savefig("06_FEM_Norm_Diff_sensitivity.png")
+        fig7.savefig("dc.svg", format='svg', bbox_inches='tight')
+        fig8.savefig("dc_ml.svg", format='svg', bbox_inches='tight')
 
         plt.pause(0.001)
         plt.tight_layout()
@@ -515,7 +528,7 @@ if __name__ == "__main__":
     # Load configuration
     load_config = {
         'position': 1,
-        'horizontal_magnitude': 50,
+        'horizontal_magnitude': 30,
         'vertical_magnitude': 50
     }
 

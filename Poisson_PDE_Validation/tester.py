@@ -31,6 +31,8 @@ def visualize_sample(input_tensor, u_true, u_pred, residual, i):
     cmap = ['coolwarm', 'viridis', 'viridis', 'inferno']
     titles = ['f(x, y)', 'u true', 'u predicted', 'Residual (∇²û - f)']
 
+    plt.rcParams['font.family'] = 'Times New Roman'
+
     fig, axs = plt.subplots(1, 4, figsize=(16, 4))
 
     for j in range(4):

@@ -21,10 +21,10 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     print(f"Load config: {load_config}")
 
     # Initialize dataset if needed
-    initialize_dataset('cantilever-diagonal_dataset.h5')
+    initialize_dataset('TESTING_NO_PENAL.h5')
 
     # Open the HDF5 file at the start and keep it open
-    h5file = h5py.File('cantilever-diagonal_dataset.h5', 'a')
+    h5file = h5py.File('TESTING_NO_PENAL.h5', 'a')
 
     try:
         problem_id = generate_problem_id(nelx, nely, volfrac, rmin, load_config)
