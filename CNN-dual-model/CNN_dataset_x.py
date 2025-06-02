@@ -1,3 +1,6 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 import h5py

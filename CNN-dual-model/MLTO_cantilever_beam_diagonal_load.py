@@ -1,12 +1,12 @@
+# A 200 line Topology Optimization code by Niels Aaage and Villads Egede Johansen, January 2013
+# Updated by Niels Aage, February 2016
+# Adapted by Ricardo Bastos, June 2025
+
+
 from __future__ import division
 import math
-import numpy as np
 from scipy.sparse import coo_matrix
 from matplotlib import colors
-import matplotlib.pyplot as plt
-import cvxopt
-import cvxopt.cholmod
-import h5py
 
 # Import U-Net model
 from ML_framework import *
@@ -219,7 +219,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             elif ft == 1:
                 xPhys[:] = np.asarray(H * x[np.newaxis].T / Hs)[:, 0]
 
-            # Compute the change by the inf. norm
+            # Compute the change
             change = np.linalg.norm(x.reshape(nelx * nely, 1) - xold.reshape(nelx * nely, 1), np.inf)
 
             # Plot to screen
@@ -247,7 +247,6 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
                     displacements.create_dataset('y', data=u_y, compression='gzip')
 
                     iter_data.attrs['compliance'] = float(obj)
-            # input()
 
         plt.show()
         input("Press any key...")

@@ -1,7 +1,10 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import numpy as np
 import torch
-# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 import torch.nn as nn
 from tqdm import tqdm
 from colorama import Fore, Style
@@ -62,18 +65,8 @@ class TopologyTrainer:
 
     def compute_component_losses(self, predicted, target):
         """Compute separate losses for x and y displacement components"""
-        # Option 1: Calculate loss in normalized space (current behavior)
+        # Calculate loss in normalized space
         y_loss = nn.MSELoss()(predicted[:, 0, :, :], target[:, 0, :, :])
-
-        # Option 2: Calculate loss in physical space (if stats are available)
-        if self.stats is not None:
-            # Denormalize predictions and targets
-            pred_physical = self.denormalize_predictions(predicted)
-            target_physical = self.denormalize_predictions(target)
-
-            # Calculate physical errors (these could be stored separately)
-            # x_error_physical = nn.MSELoss()(pred_physical[:, 0, :, :], target_physical[:, 0, :, :])
-            # y_error_physical = nn.MSELoss()(pred_physical[:, 1, :, :], target_physical[:, 1, :, :])
 
         return y_loss
 

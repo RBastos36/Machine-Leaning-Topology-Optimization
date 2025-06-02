@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 import torch.nn as nn
 
@@ -18,7 +22,7 @@ class UNetBlock(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout2d(p=dropout_rate)
 
-        # Optional: Add Layer Normalization
+        # Add Layer Normalization
         self.norm1 = nn.GroupNorm(num_groups=8, num_channels=out_channels)
         self.norm2 = nn.GroupNorm(num_groups=8, num_channels=out_channels)
 
