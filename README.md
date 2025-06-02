@@ -68,7 +68,7 @@ This project is licensed under the following licenses:
 ## Contact
 
 - **Author**: Ricardo A. O. Bastos
-- **Institutional Email**: [r.bastos@ua.com](r.bastos@ua.pt)
+- **Institutional Email**: [r.bastos@ua.pt](r.bastos@ua.pt)
 - **LinkedIn**: [Ricardo Bastos](https://www.linkedin.com/in/ricardo-bastos-rantonio/)
 
 ## Acknowledgments
