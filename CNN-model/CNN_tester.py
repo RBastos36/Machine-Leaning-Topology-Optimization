@@ -8,6 +8,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import json
 import h5py
+from scipy.stats import wasserstein_distance, pearsonr
+from skimage.metrics import structural_similarity as ssim
+from sklearn.metrics.pairwise import cosine_similarity
 
 from CNN_dataset import FEMDataset, calculate_dataset_statistics
 from CNN_model_Unet_node_level import TopologyOptimizationCNN
@@ -96,12 +99,13 @@ class ModelTester:
         plt.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'Liberation Sans', 'Bitstream Vera Sans',
                                            'sans-serif']
         plt.rcParams['axes.labelsize'] = 12
-        plt.rcParams['axes.titlesize'] = 14
-        plt.rcParams['axes.titleweight'] = 'bold'
-        plt.rcParams['xtick.labelsize'] = 10
-        plt.rcParams['ytick.labelsize'] = 10
-        plt.rcParams['legend.fontsize'] = 10
-        plt.rcParams['figure.titlesize'] = 16
+        plt.rcParams['axes.titlesize'] = 20
+        # plt.rcParams['axes.titleweight'] = 'bold'
+        plt.rcParams['xtick.labelsize'] = 18
+        plt.rcParams['ytick.labelsize'] = 18
+        plt.rcParams['legend.fontsize'] = 18
+        plt.rcParams['figure.titlesize'] = 18
+
 
     def visualize_predictions(self, predictions, targets, num_samples=5):
         """Visualize model predictions against ground truth and error maps, saving each separately."""
@@ -131,21 +135,21 @@ class ModelTester:
 
             ## === Ground Truth Figure ===
             fig_gt, axes_gt = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
-            fig_gt.suptitle(f'Ground Truth Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+            # fig_gt.suptitle(f'Ground Truth Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_gt_x = axes_gt[0].imshow(target[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
-            axes_gt[0].set_title("Ground Truth - X Displacement")
+            axes_gt[0].set_title(r"O$\mathit{x}$-displacement")
             axes_gt[0].set_xticks([])
             axes_gt[0].set_yticks([])
             cbar_gt_x = plt.colorbar(im_gt_x, ax=axes_gt[0], fraction=0.046, pad=0.04)
-            cbar_gt_x.ax.tick_params(labelsize=9)
+            cbar_gt_x.ax.tick_params(labelsize=16)
 
             im_gt_y = axes_gt[1].imshow(target[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
-            axes_gt[1].set_title("Ground Truth - Y Displacement")
+            axes_gt[1].set_title(r"O$\mathit{y}$-displacement")
             axes_gt[1].set_xticks([])
             axes_gt[1].set_yticks([])
             cbar_gt_y = plt.colorbar(im_gt_y, ax=axes_gt[1], fraction=0.046, pad=0.04)
-            cbar_gt_y.ax.tick_params(labelsize=9)
+            cbar_gt_y.ax.tick_params(labelsize=16)
 
             plt.tight_layout()
             plt.subplots_adjust(top=0.92)
@@ -155,21 +159,21 @@ class ModelTester:
 
             ## === Prediction Figure ===
             fig_pred, axes_pred = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
-            fig_pred.suptitle(f'Predicted Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+            # fig_pred.suptitle(f'Predicted Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_pred_x = axes_pred[0].imshow(pred[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
-            axes_pred[0].set_title("Prediction - X Displacement")
+            axes_pred[0].set_title(r"O$\mathit{x}$-displacement")
             axes_pred[0].set_xticks([])
             axes_pred[0].set_yticks([])
             cbar_pred_x = plt.colorbar(im_pred_x, ax=axes_pred[0], fraction=0.046, pad=0.04)
-            cbar_pred_x.ax.tick_params(labelsize=9)
+            cbar_pred_x.ax.tick_params(labelsize=16)
 
             im_pred_y = axes_pred[1].imshow(pred[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
-            axes_pred[1].set_title("Prediction - Y Displacement")
+            axes_pred[1].set_title(r"O$\mathit{y}$-displacement")
             axes_pred[1].set_xticks([])
             axes_pred[1].set_yticks([])
             cbar_pred_y = plt.colorbar(im_pred_y, ax=axes_pred[1], fraction=0.046, pad=0.04)
-            cbar_pred_y.ax.tick_params(labelsize=9)
+            cbar_pred_y.ax.tick_params(labelsize=16)
 
             plt.tight_layout()
             plt.subplots_adjust(top=0.92)
@@ -179,27 +183,87 @@ class ModelTester:
 
             ## === Error Figure ===
             fig_err, axes_err = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
-            fig_err.suptitle(f'Displacement Error Maps - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
+            # fig_err.suptitle(f'Displacement Error Maps - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_err_x = axes_err[0].imshow(error[0].numpy(), cmap='seismic', vmin=error_x_min, vmax=error_x_max)
-            axes_err[0].set_title("Error - X Displacement (Prediction - Ground Truth)")
+            axes_err[0].set_title(r"O$\mathit{x}$-displacement")
             axes_err[0].set_xticks([])
             axes_err[0].set_yticks([])
             cbar_err_x = plt.colorbar(im_err_x, ax=axes_err[0], fraction=0.046, pad=0.04)
-            cbar_err_x.ax.tick_params(labelsize=9)
+            cbar_err_x.ax.tick_params(labelsize=16)
 
             im_err_y = axes_err[1].imshow(error[1].numpy(), cmap='seismic', vmin=error_y_min, vmax=error_y_max)
-            axes_err[1].set_title("Error - Y Displacement (Prediction - Ground Truth)")
+            axes_err[1].set_title(r"O$\mathit{y}$-displacement")
             axes_err[1].set_xticks([])
             axes_err[1].set_yticks([])
             cbar_err_y = plt.colorbar(im_err_y, ax=axes_err[1], fraction=0.046, pad=0.04)
-            cbar_err_y.ax.tick_params(labelsize=9)
+            cbar_err_y.ax.tick_params(labelsize=16)
 
             plt.tight_layout()
             plt.subplots_adjust(top=0.92)
             plt.savefig(f"sample_{i}_error.png", dpi=300, bbox_inches='tight')
             plt.savefig(f"sample_{i}_error.svg", bbox_inches='tight')
             plt.close(fig_err)
+
+            # Convert to numpy for calculations
+            pred_np = pred.numpy()
+            target_np = target.numpy()
+
+            # === Mean Squared Error ===
+            mse_x = torch.nn.functional.mse_loss(pred[0], target[0]).item()
+            mse_y = torch.nn.functional.mse_loss(pred[1], target[1]).item()
+
+            # === Structural Similarity Index Measure ===
+            # SSIM requires data range to be specified
+            data_range_x = max(target_np[0].max() - target_np[0].min(), pred_np[0].max() - pred_np[0].min())
+            data_range_y = max(target_np[1].max() - target_np[1].min(), pred_np[1].max() - pred_np[1].min())
+
+            ssim_x = ssim(target_np[0], pred_np[0], data_range=data_range_x)
+            ssim_y = ssim(target_np[1], pred_np[1], data_range=data_range_y)
+
+            # === Pearson Correlation ===
+            # Flatten arrays for correlation calculation
+            pred_x_flat = pred_np[0].flatten()
+            pred_y_flat = pred_np[1].flatten()
+            target_x_flat = target_np[0].flatten()
+            target_y_flat = target_np[1].flatten()
+
+            pearson_x, _ = pearsonr(pred_x_flat, target_x_flat)
+            pearson_y, _ = pearsonr(pred_y_flat, target_y_flat)
+
+            # Overall correlation using flattened combined arrays
+            pred_combined = pred_np.flatten()
+            target_combined = target_np.flatten()
+            pearson_total, _ = pearsonr(pred_combined, target_combined)
+
+            # === Earth Mover's Distance (Wasserstein Distance) ===
+            # Direct EMD calculation on raw values (more interpretable for displacement data)
+            emd_x = wasserstein_distance(pred_x_flat, target_x_flat)
+            emd_y = wasserstein_distance(pred_y_flat, target_y_flat)
+
+            # === Cosine Similarity ===
+            # Reshape for cosine similarity (sklearn expects 2D arrays)
+            pred_x_reshaped = pred_x_flat.reshape(1, -1)
+            target_x_reshaped = target_x_flat.reshape(1, -1)
+            pred_y_reshaped = pred_y_flat.reshape(1, -1)
+            target_y_reshaped = target_y_flat.reshape(1, -1)
+
+            cosine_x = cosine_similarity(pred_x_reshaped, target_x_reshaped)[0, 0]
+            cosine_y = cosine_similarity(pred_y_reshaped, target_y_reshaped)[0, 0]
+
+            with open("metrics_results.txt", "a") as f:
+                f.write(f"\n=== Comprehensive Metrics for Sample {i} ===\n")
+                f.write(f"Mean Squared Error:\n")
+                f.write(f"  X: {mse_x:.6f}, Y: {mse_y:.6f}\n")
+                f.write(f"Structural Similarity Index Measure:\n")
+                f.write(f"  X: {ssim_x:.4f}, Y: {ssim_y:.4f}\n")
+                f.write(f"Pearson Correlation:\n")
+                f.write(f"  X: {pearson_x:.4f}, Y: {pearson_y:.4f}\n")
+                f.write(f"Earth Mover's Distance:\n")
+                f.write(f"  X: {emd_x:.6f}, Y: {emd_y:.6f}\n")
+                f.write(f"Cosine Similarity:\n")
+                f.write(f"  X: {cosine_x:.4f}, Y: {cosine_y:.4f}\n")
+                f.write("=" * 55 + "\n")
 
         print(f"Saved {len(indices)} samples: ground truth, prediction, and error maps as PNG and SVG files each.")
 
@@ -337,7 +401,10 @@ def main():
 
     # Calculate dataset statistics for normalization
     print("Loading dataset statistics...")
-    stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
+    # stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
+
+    with open("dataset_stats.json", "r") as outfile:
+        stats = json.load(outfile)
 
     # Create test dataset
     print("Creating test dataset...")

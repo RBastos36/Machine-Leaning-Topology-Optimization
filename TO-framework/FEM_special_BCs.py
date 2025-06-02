@@ -1,6 +1,11 @@
+# A 200 line Topology Optimization code by Niels Aaage and Villads Egede Johansen, January 2013
+# Updated by Niels Aage, February 2016
+# Adapted by Ricardo Bastos, January 2025
+
 from __future__ import division
-import math
 import numpy as np
+from matplotlib.pyplot import tight_layout
+from numpy.ma.extras import union1d
 from scipy.sparse import coo_matrix
 from matplotlib import colors
 import matplotlib.pyplot as plt
@@ -12,49 +17,22 @@ import h5py
 from ML_framework import *
 
 
-def extrapolate_domain_uniform(domain):
-    """
-    Extrapolate element-wise domain to nodal grid using uniform averaging.
-    domain: (H, W) numpy array of element-wise densities
-    returns: (H+1, W+1) numpy array of node-wise densities
-    """
-    H, W = domain.shape
-    nodal = np.zeros((H+1, W+1))
-    counts = np.zeros((H+1, W+1))
-
-    for i in range(H):
-        for j in range(W):
-            e_density = domain[i, j]
-            # Share equally to the 4 surrounding nodes
-            for dy in [0, 1]:
-                for dx in [0, 1]:
-                    n_y = i + dy
-                    n_x = j + dx
-                    nodal[n_y, n_x] += e_density
-                    counts[n_y, n_x] += 1
-
-    nodal /= np.maximum(counts, 1e-8)
-    return nodal
-
-
-def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
+def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
     print("Minimum compliance problem with OC")
     print("ndes: " + str(nelx) + " x " + str(nely))
-    print("volfrac: " + str(volfrac) + ", rmin: " + str(rmin) + ", penal: " + str(penal))
-    print("Filter method: " + ["Sensitivity based", "Density based"][ft])
     print(f"Load config: {load_config}")
 
     # Initialize dataset if needed
-    initialize_dataset('cantilever_diagonal_framework.h5')
+    initialize_dataset('fem_special_bcs.h5')
 
     # Open the HDF5 file at the start and keep it open
-    h5file = h5py.File('cantilever_diagonal_framework.h5', 'a')
+    h5file = h5py.File('fem_special_bcs.h5', 'a')
 
     # ML initializations
-    model_path = '../CNN-model/models/topology_Unet_model_Loss_BC.pkl'
     device = None
-    with open('../CNN-model/dataset_stats_loss_bcs.json', 'r') as f:
+    with open(stats_path, 'r') as f:
         stats = json.load(f)
+
 
     # Initialize model
     model = TopologyOptimizationCNN()
@@ -90,6 +68,8 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         # Max and min stiffness
         Emin = 1e-9
         Emax = 1.0
+        E = 1
+        nu = 0.3
 
         # dofs:
         ndof = 2 * (nelx + 1) * (nely + 1)
@@ -97,14 +77,15 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         # Allocate design variables (as array), initialize and allocate sens.
         x_0 = np.ones(nely * nelx, dtype=float)
         x = volfrac * x_0
-        xold = x.copy()
         xPhys = x.copy()
 
         g = 0  # must be initialized to use the NGuyen/Paulino OC approach
-        dc = np.zeros((nely, nelx), dtype=float)
+        dc = np.ones(nely * nelx)
+        dc_ml = np.ones(nely * nelx)
 
         # FE: Build the index vectors for the for coo matrix format.
-        KE = lk()
+        # KE = lk(E / A0, nu, A0)
+        KE = lk(E, nu)
         edofMat = np.zeros((nelx * nely, 8), dtype=int)
         for elx in range(nelx):
             for ely in range(nely):
@@ -113,6 +94,10 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
                 n2 = (nely + 1) * (elx + 1) + ely
                 edofMat[el, :] = np.array(
                     [2 * n1 + 2, 2 * n1 + 3, 2 * n2 + 2, 2 * n2 + 3, 2 * n2, 2 * n2 + 1, 2 * n1, 2 * n1 + 1])
+
+        # Construct the index pointers for the coo format
+        iK = np.kron(edofMat, np.ones((8, 1))).flatten()
+        jK = np.kron(edofMat, np.ones((1, 8))).flatten()
 
         # Filter: Build (and assemble) the index+data vectors for the coo matrix format
         nfilter = int(nelx * nely * ((2 * (np.ceil(rmin) - 1) + 1) ** 2))
@@ -142,7 +127,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
 
         # BC's and support (left edge fixed)
         dofs = np.arange(2 * (nelx + 1) * (nely + 1))
-        fixed = dofs[0:2 * (nely + 1):1]  # Fix all DOFs on left edge
+        fixed = union1d(dofs[0:2 * (nely + 1):2], dofs[1])
         free = np.setdiff1d(dofs, fixed)
 
         # Set up load vector
@@ -160,18 +145,16 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         # Solution and RHS vectors
         u = np.zeros((ndof, 1))
 
+        # Initialize plot
+        # plt.ion()
+        # fig, ax = plt.subplots()
+        # im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
+        #                norm=colors.Normalize(vmin=-1, vmax=0))
+        # plt.show(block=False)
+
         loop = 0
         change = 1
-        dv = np.ones(nely * nelx)
-        dc = np.ones(nely * nelx)
         ce = np.ones(nely * nelx)
-
-        # Initialize plot
-        plt.ion()
-        fig, ax = plt.subplots()
-        im = ax.imshow(-xPhys.reshape((nelx, nely)).T, cmap='gray', interpolation='none',
-                       norm=colors.Normalize(vmin=-1, vmax=0))
-        plt.show(block=False)
 
         # Split matrices into x and y components
         fixed_x, fixed_y = create_xy_matrices(fixed, nelx, nely)
@@ -197,79 +180,188 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             # Save initial domain
             setup.create_dataset('initial_domain', data=x_0.reshape((nelx, nely)).T)
 
-        while change > 0.01 and loop < 2000:
-            loop = loop + 1
-            # Substitute FEM displacements by the U-Net model
-            xPhys_2_save = xPhys
-            domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
-            domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
-            # domain = extrapolate_domain_uniform(xPhys.reshape((nelx, nely)).T)
-            input_tensor = np.stack([domain, loads_x, loads_y, fixed_x, fixed_y], axis=0)
-            prediction = tester.predict_single_instance(input_tensor)
-            u_x = prediction[0].cpu().numpy()[0, :, :]
-            u_y = prediction[0].cpu().numpy()[1, :, :]
-            u = combine_displacement_matrices(u_x, u_y)
+        # Setup and solve FE problem
+        sK = ((KE.flatten()[np.newaxis]).T * (Emin + xPhys ** penal * (Emax - Emin))).flatten(order='F')
+        K = coo_matrix((sK, (iK, jK)), shape=(ndof, ndof)).tocsc()
+        # Remove constrained dofs from matrix
+        K = deleterowcol(K, fixed, fixed).tocoo()
+        # Solve system
+        K = cvxopt.spmatrix(K.data, K.row.astype(int), K.col.astype(int))
+        B = cvxopt.matrix(f[free, 0])
+        cvxopt.cholmod.linsolve(K, B)
+        u[free, 0] = np.array(B)[:, 0]
 
-            # Objective and sensitivity
-            ce[:] = (np.dot(u[edofMat].reshape(nelx * nely, 8), KE) * u[edofMat].reshape(nelx * nely, 8)).sum(1)
-            obj = ((Emin + xPhys ** penal * (Emax - Emin)) * ce).sum()
-            dc[:] = (-penal * xPhys ** (penal - 1) * (Emax - Emin)) * ce
+        save = xPhys.copy()
+        domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
+        domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
+        # domain = extrapolate_domain_uniform(xPhys.reshape((nelx, nely)).T)
+        input_tensor = np.stack([domain, fixed_x, fixed_y, loads_x, loads_y], axis=0)
+        prediction = tester.predict_single_instance(input_tensor)
+        print(prediction)
+        u_x_ml = prediction[0].cpu().numpy()[0, :, :]
+        u_y_ml = prediction[0].cpu().numpy()[1, :, :]
+        u_ml = combine_displacement_matrices(u_x_ml, u_y_ml)
 
-            dv[:] = np.ones(nely * nelx)
-            # Sensitivity filtering:
-            if ft == 0:
-                dc[:] = np.asarray((H * (x * dc))[np.newaxis].T / Hs)[:, 0] / np.maximum(0.001, x)
-            elif ft == 1:
-                dc[:] = np.asarray(H * (dc[np.newaxis].T / Hs))[:, 0]
-                dv[:] = np.asarray(H * (dv[np.newaxis].T / Hs))[:, 0]
+        # Objective and sensitivity
+        ce[:] = (np.dot(u[edofMat].reshape(nelx * nely, 8), KE) * u[edofMat].reshape(nelx * nely, 8)).sum(1)
+        obj = ((Emin + xPhys ** penal * (Emax - Emin)) * ce).sum()
 
-            # Optimality criteria
-            xold[:] = x
-            (x[:], g) = oc(nelx, nely, x, volfrac, dc, dv, g)
+        # Calculate ML compliance energy
+        # Reshape u_ml to match edofMat shape for element-wise computation
+        ce_ml = np.zeros(nely * nelx)
+        u_ml_reshaped = np.zeros_like(u)
+        u_ml_reshaped[:len(u_ml)] = u_ml.reshape(-1, 1)
+        ce_ml[:] = (np.dot(u_ml_reshaped[edofMat].reshape(nelx * nely, 8), KE) *
+                    u_ml_reshaped[edofMat].reshape(nelx * nely, 8)).sum(1)
+        obj_ml = ((Emin + xPhys ** penal * (Emax - Emin)) * ce_ml).sum()
 
-            # Filter design variables
-            if ft == 0:
-                xPhys[:] = x
-            elif ft == 1:
-                xPhys[:] = np.asarray(H * x[np.newaxis].T / Hs)[:, 0]
+        # Plot to screen
+        # im.set_array(-xPhys.reshape((nelx, nely)).T)
+        # fig.canvas.draw()
+        # fig.canvas.flush_events()
+        # plt.pause(0.001)
 
-            # Compute the change by the inf. norm
-            change = np.linalg.norm(x.reshape(nelx * nely, 1) - xold.reshape(nelx * nely, 1), np.inf)
+        print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
+            loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
+        print(f"ML obj.: {obj_ml:.3f}")
 
-            # Plot to screen
-            im.set_array(-xPhys.reshape((nelx, nely)).T)
-            fig.canvas.draw()
-            fig.canvas.flush_events()
-            plt.pause(0.001)
+        # Split displacements into x and y components
+        u_x, u_y = create_displacement_matrices(u, nelx, nely)
 
-            print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(
-                loop, obj, (g + volfrac * nelx * nely) / (nelx * nely), change))
+        print(f"Maximum X displacement: {np.max(np.abs(u_x))}")
+        print(f"Maximum Y displacement: {np.max(np.abs(u_y))}")
 
-            if loop == 1 or loop == 10 or loop == 100 or loop == 1000:
-                fig.savefig(f"iter_{loop}_loss_bcs.svg", bbox_inches='tight')
+        iter_group_name = f'iter_{loop}'
+        if iter_group_name not in prob_group:
+            iter_data = prob_group.create_group(iter_group_name)
+            iter_data.create_dataset('domain', data=save.reshape((nelx, nely)).T, compression='gzip')
 
-            # Save iteration data periodically
-            if loop <= 10 or 2 ** (int(math.log2(loop))) == loop:
-                iter_group_name = f'iter_{loop}'
-                if iter_group_name not in prob_group:
-                    iter_data = prob_group.create_group(iter_group_name)
-                    iter_data.create_dataset('domain', data=xPhys_2_save.reshape((nelx, nely)).T, compression='gzip')
+            # Save separated displacement components
+            displacements = iter_data.create_group('displacements')
+            displacements.create_dataset('x', data=u_x, compression='gzip')
+            displacements.create_dataset('y', data=u_y, compression='gzip')
+            displacements.create_dataset('x_ML', data=u_x_ml, compression='gzip')
+            displacements.create_dataset('y_ML', data=u_y_ml, compression='gzip')
 
-                    # Save separated displacement components
-                    displacements = iter_data.create_group('displacements')
-                    displacements.create_dataset('x', data=u_x, compression='gzip')
-                    displacements.create_dataset('y', data=u_y, compression='gzip')
+            iter_data.attrs['compliance'] = float(obj)
+            iter_data.attrs['compliance_ML'] = float(obj_ml)
 
-                    iter_data.attrs['compliance'] = float(obj)
+            # Save compliance energy
+            compliance = iter_data.create_group('compliance')
+            ce_reshaped = ce.reshape(nelx, nely).T
+            ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
+            compliance.create_dataset('ce', data=ce_reshaped, compression='gzip')
+            compliance.create_dataset('ce_ML', data=ce_ml_reshaped, compression='gzip')
 
-        plt.show()
-        input("Press any key...")
+        # Calculate normalized differences
+        # Add a small epsilon to avoid division by zero
+        epsilon = 1e-10
+
+        # For displacements, we need to handle areas where the original displacement is near zero
+        # We'll use absolute difference where original values are very small
+        delta_u_x_norm = np.divide(u_x - u_x_ml, np.abs(u_x) + epsilon)
+        delta_u_y_norm = np.divide(u_y - u_y_ml, np.abs(u_y) + epsilon)
+
+        # For compliance energy
+        ce_reshaped = ce.reshape(nelx, nely).T
+        ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
+        delta_ce_norm = np.divide(ce_reshaped - ce_ml_reshaped, np.abs(ce_reshaped) + epsilon)
+
+        dc[:] = (-penal * xPhys ** (penal - 1) * (Emax - Emin)) * ce
+        dc_ml[:] = (-penal * xPhys ** (penal - 1) * (Emax - Emin)) * ce_ml
+        delta_dc_norm = np.divide(dc - dc_ml, np.abs(dc) + epsilon)
+
+        # Plot displacement fields
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+        im1 = axs[0].imshow(u_x, cmap='coolwarm', interpolation='none')
+        axs[0].set_title("Displacement in X-direction")
+        fig.colorbar(im1, ax=axs[0])
+
+        im2 = axs[1].imshow(u_y, cmap='coolwarm', interpolation='none')
+        axs[1].set_title("Displacement in Y-direction")
+        fig.colorbar(im2, ax=axs[1])
+        fig.suptitle("SIMP displacements")
+
+        # Plot ML displacement fields
+        fig2, axs2 = plt.subplots(1, 2, figsize=(10, 4))
+        im2 = axs2[0].imshow(u_x_ml, cmap='coolwarm', interpolation='none')
+        axs2[0].set_title("Displacement in X-direction")
+        fig2.colorbar(im2, ax=axs2[0])
+
+        im2 = axs2[1].imshow(u_y_ml, cmap='coolwarm', interpolation='none')
+        axs2[1].set_title("Displacement in Y-direction")
+        fig2.colorbar(im2, ax=axs2[1])
+        fig2.suptitle("MLTO displacements")
+
+        # Plot absolute differences
+        fig3, axs3 = plt.subplots(1, 2, figsize=(10, 4))
+        im3 = axs3[0].imshow(abs(u_x - u_x_ml), cmap='binary', interpolation='none')
+        axs3[0].set_title("Displacement in X-direction")
+        fig3.colorbar(im3, ax=axs3[0])
+
+        im3 = axs3[1].imshow(abs(u_y - u_y_ml), cmap='binary', interpolation='none')
+        axs3[1].set_title("Displacement in Y-direction")
+        fig3.colorbar(im3, ax=axs3[1])
+        fig3.suptitle("Absolute differences")
+
+        # Plot normalized differences in displacement
+        fig4, axs4 = plt.subplots(1, 2, figsize=(10, 4))
+        # Use a symmetric colormap with limits to better visualize differences
+        vmin, vmax = -1, 1  # For normalized data, -1 to 1 is often sufficient
+        im4 = axs4[0].imshow(delta_u_x_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs4[0].set_title("Normalized X-displacement Difference")
+        fig4.colorbar(im4, ax=axs4[0])
+
+        im4 = axs4[1].imshow(delta_u_y_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs4[1].set_title("Normalized Y-displacement Difference")
+        fig4.colorbar(im4, ax=axs4[1])
+        fig4.suptitle("Normalized Displacement Differences (SIMP-ML)/SIMP")
+
+        # Plot normalized differences in compliance energy
+        fig5, axs5 = plt.subplots(figsize=(8, 6))
+        im5 = axs5.imshow(delta_ce_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs5.set_title("Normalized Compliance Energy Difference (SIMP-ML)/SIMP")
+        fig5.colorbar(im5, ax=axs5)
+
+        # Plot normalized differences in sensitivity
+        fig6, axs6 = plt.subplots(figsize=(8, 6))
+        im6 = axs6.imshow(delta_dc_norm.reshape(nelx, nely).T, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
+        axs6.set_title("Normalized Sensitivity Difference (SIMP-ML)/SIMP")
+        fig6.colorbar(im6, ax=axs6)
+
+        plt.tight_layout()
+        plt.rcParams['font.family'] = 'Times New Roman'
+        plt.rcParams['font.size'] = 14
+
+        fig7, axs7 = plt.subplots(figsize=(6, 2))
+        im7 = axs7.imshow(dc.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
+        fig7.colorbar(im7, ax=axs7, fraction=0.046, pad=0.04, aspect=10)
+
+        fig8, axs8 = plt.subplots(figsize=(6, 2))
+        im8 = axs8.imshow(dc_ml.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
+        fig8.colorbar(im8, ax=axs8, fraction=0.046, pad=0.04, aspect=10)
+
+        # Save all figures
+        fig.savefig("01_FEM_SIMP_displacements.png")
+        fig2.savefig("02_FEM_MLTO_displacements.png")
+        fig3.savefig("03_FEM_Diff_displacements.png")
+        fig4.savefig("04_FEM_Norm_Diff_displacements.png")
+        fig5.savefig("05_FEM_Norm_Diff_compliance.png")
+        fig6.savefig("06_FEM_Norm_Diff_sensitivity.png")
+        fig7.savefig("dc.svg", format='svg', bbox_inches='tight')
+        fig8.savefig("dc_ml_loss_bcs.svg", format='svg', bbox_inches='tight')
+
+        plt.pause(0.001)
+        plt.tight_layout()
+        # plt.show(block=False)
+        # input("Press any key...")
 
         # Save final results
         if 'results' not in prob_group:
             results = prob_group.create_group('results')
             results.create_dataset('final_domain', data=xPhys.reshape((nelx, nely)).T, compression='gzip')
             results.attrs['final_compliance'] = float(obj)
+            results.attrs['final_compliance_ML'] = float(obj_ml)
             results.attrs['total_iterations'] = loop
 
     finally:
@@ -278,9 +370,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     return xPhys, obj
 
 
-def lk():
-    E = 1
-    nu = 0.3
+def lk(E, nu):
     k = np.array(
         [1 / 2 - nu / 6, 1 / 8 + nu / 8, -1 / 4 - nu / 12, -1 / 8 + 3 * nu / 8, -1 / 4 + nu / 12, -1 / 8 - nu / 8,
          nu / 6, 1 / 8 - 3 * nu / 8])
@@ -293,23 +383,6 @@ def lk():
                                        [k[6], k[3], k[4], k[1], k[2], k[7], k[0], k[5]],
                                        [k[7], k[2], k[1], k[4], k[3], k[6], k[5], k[0]]])
     return KE
-
-
-def oc(nelx, nely, x, volfrac, dc, dv, g):
-    l1 = 0
-    l2 = 1e9
-    move = 0.2
-    xnew = np.zeros(nelx * nely)
-    while (l2 - l1) / (l1 + l2) > 1e-3:
-        lmid = 0.5 * (l2 + l1)
-        xnew[:] = np.maximum(0.0,
-                            np.maximum(x - move, np.minimum(1.0, np.minimum(x + move, x * np.sqrt(-dc / dv / lmid)))))
-        gt = g + np.sum((dv * (xnew - x)))
-        if gt > 0:
-            l1 = lmid
-        else:
-            l2 = lmid
-    return (xnew, gt)
 
 
 def deleterowcol(A, delrow, delcol):
@@ -435,22 +508,47 @@ def combine_displacement_matrices(u_x, u_y):
     return u
 
 
+def extrapolate_domain_uniform(domain):
+    """
+    Extrapolate element-wise domain to nodal grid using uniform averaging.
+    domain: (H, W) numpy array of element-wise densities
+    returns: (H+1, W+1) numpy array of node-wise densities
+    """
+    H, W = domain.shape
+    nodal = np.zeros((H+1, W+1))
+    counts = np.zeros((H+1, W+1))
+
+    for i in range(H):
+        for j in range(W):
+            e_density = domain[i, j]
+            # Share equally to the 4 surrounding nodes
+            for dy in [0, 1]:
+                for dx in [0, 1]:
+                    n_y = i + dy
+                    n_x = j + dx
+                    nodal[n_y, n_x] += e_density
+                    counts[n_y, n_x] += 1
+
+    nodal /= np.maximum(counts, 1e-8)
+    return nodal
+
+
 if __name__ == "__main__":
     # Default input parameters
-    nelx = 180
-    nely = 60
     volfrac = 0.5
     rmin = 5.4
     penal = 3.0
-    ft = 0  # ft==0 -> sens, ft==1 -> dens
+    nelx = 180
+    nely = 60
 
-    # Example: 30-degree diagonal load pointing down and left
-    magnitude = -1.0
-    angle = 90  # degrees
+    model_path = '../CNN-model/models/topology_Unet_model_Loss_BC.pkl'
+    stats_path = '../CNN-model/dataset_stats_loss_bcs.json'
+
+    # Load configuration
     load_config = {
         'position': 1,
         'horizontal_magnitude': 0,
         'vertical_magnitude': 50
     }
 
-    xPhys, obj = topopt(nelx, nely, volfrac, penal, rmin, ft, load_config)
+    xPhys, obj = fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path)

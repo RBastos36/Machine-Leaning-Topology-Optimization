@@ -8,7 +8,7 @@ import json
 
 from CNN_dataset import FEMDataset, calculate_dataset_statistics
 from CNN_model_Unet_node_level import TopologyOptimizationCNN
-from CNN_trainer import TopologyTrainer
+from CNN_trainer_bcs_pde import TopologyTrainer
 
 
 def initialize_weights_kaiming(layer):
@@ -27,16 +27,16 @@ def main():
     # Paths
     hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
     json_split_path = '../dataset-creation/dataset_split_stratified.json'
-    model_save_path = 'models/topology_Unet_model_Dropout.pkl'
+    model_save_path = 'models/topology_Unet_model_Loss_BC_PDE.pkl'
 
     # Calculate dataset statistics for normalization
     print("Calculating dataset statistics...")
-    # stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
-    # with open("dataset_stats_node_domain.json", "w") as outfile:
-    #     json.dump(stats, outfile)
+    stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
+    with open("dataset_stats_loss_bcs_pde.json", "w") as outfile:
+        json.dump(stats, outfile)
 
-    with open("dataset_stats_node_domain.json", "r") as outfile:
-        stats = json.load(outfile)
+    # with open("dataset_stats_node_domain.json", "r") as outfile:
+    #     stats = json.load(outfile)
 
     # Create datasets
     print("Creating datasets...")

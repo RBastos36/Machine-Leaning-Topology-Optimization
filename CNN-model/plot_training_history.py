@@ -52,15 +52,15 @@ class ModelHistoryPlotter:
         ax1.legend(frameon=True, loc='upper right', facecolor='white', edgecolor='gray')
 
         plt.tight_layout()
-        fig1.savefig("model_loss.svg")
+        fig1.savefig("model_loss_loss_bcs.svg")
         plt.show()
 
         # Second figure: Component-wise Loss
         fig2, ax2 = plt.subplots(figsize=(7, 6), dpi=150)
 
-        ax2.plot(epochs, metrics['x_loss'], '-', color=colors[2], linewidth=2, label='X-Displacement Loss', marker='o',
+        ax2.plot(epochs, metrics['x_loss'], '-', color=colors[2], linewidth=2, label=r"$\mathit{x}$-displacement Loss", marker='o',
                  markersize=4)
-        ax2.plot(epochs, metrics['y_loss'], '-', color=colors[3], linewidth=2, label='Y-Displacement Loss', marker='s',
+        ax2.plot(epochs, metrics['y_loss'], '-', color=colors[3], linewidth=2, label=r"$\mathit{y}$-displacement Loss", marker='s',
                  markersize=4)
         ax2.fill_between(epochs, metrics['x_loss'], metrics['y_loss'], alpha=0.1, color=colors[3])
         ax2.set_xlabel('Epochs')
@@ -74,12 +74,12 @@ class ModelHistoryPlotter:
         print(min([float(x) for x in metrics['y_loss']]))
 
         plt.tight_layout()
-        fig2.savefig("component_loss.svg")
+        fig2.savefig("component_loss_loss_bcs.svg")
         plt.show()
 
 
 def main():
-    model_path = 'models/topology_Unet_model_Hybrid_Padding.pkl'
+    model_path = 'models/topology_Unet_model_Loss_BC.pkl'
     plotter = ModelHistoryPlotter(model_path)
     metrics = plotter.load_model()
     plotter.plot_training_history(metrics)
