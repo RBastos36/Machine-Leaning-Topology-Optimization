@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -35,7 +39,7 @@ class PoissonDataset(Dataset):
         # Random source term f(x, y)
         f = np.random.randn(N, N)
 
-        # Solve the Poisson equation ∇²u = f
+        # Solve the Poisson equation
         A = self._laplace_matrix(N) / h**2
         u = spsolve(A, f.flatten()).reshape(N, N)
 
@@ -43,7 +47,7 @@ class PoissonDataset(Dataset):
         u = (u - self.stats.get("mean", 0.0)) / self.stats.get("std", 1.0)
         f = (f - self.stats.get("mean", 0.0)) / self.stats.get("std", 1.0)
 
-        # Domain mask is all ones (entire domain is valid)
+        # Domain mask is all ones
         domain_mask = np.ones((N, N), dtype=np.float32)
 
         return domain_mask, f.astype(np.float32), u.astype(np.float32)

@@ -1,9 +1,13 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from dataset import PoissonDataset
-from model_Unet_node_level import TopologyOptimizationCNN  # Adjust if your model class has a different name
+from model_Unet_node_level import TopologyOptimizationCNN
 import os
 
 
@@ -59,7 +63,7 @@ def visualize_sample(input_tensor, u_true, u_pred, residual, i):
 
 def test_model(model_path, device='cuda' if torch.cuda.is_available() else 'cpu'):
     # Load model
-    model = TopologyOptimizationCNN()  # Adjust if yours is different
+    model = TopologyOptimizationCNN()
     model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False)['model_state_dict'])
     model.to(device)
     model.eval()
@@ -86,7 +90,6 @@ def test_model(model_path, device='cuda' if torch.cuda.is_available() else 'cpu'
 
 
 if __name__ == '__main__':
-    # Path to your pre-trained model
     model_file = 'models/topology_Unet_model_Poisson.pkl'
 
     if not os.path.exists(model_file):

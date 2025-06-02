@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
 
 
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-import torch.nn as nn
-import torch.nn.init as init
-import json
 
 from dataset import PoissonDataset
 from model_Unet_node_level import TopologyOptimizationCNN
