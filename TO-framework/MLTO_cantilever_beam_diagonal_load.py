@@ -1,12 +1,12 @@
+# A 200 line Topology Optimization code by Niels Aaage and Villads Egede Johansen, January 2013
+# Updated by Niels Aage, February 2016
+# Adapted by Ricardo Bastos, June 2025
+
+
 from __future__ import division
 import math
-import numpy as np
 from scipy.sparse import coo_matrix
 from matplotlib import colors
-import matplotlib.pyplot as plt
-import cvxopt
-import cvxopt.cholmod
-import h5py
 
 # Import U-Net model
 from ML_framework import *
@@ -91,7 +91,7 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
         Emin = 1e-9
         Emax = 1.0
 
-        # dofs:
+        # dofs
         ndof = 2 * (nelx + 1) * (nely + 1)
 
         # Allocate design variables (as array), initialize and allocate sens.
@@ -444,9 +444,6 @@ if __name__ == "__main__":
     penal = 3.0
     ft = 0  # ft==0 -> sens, ft==1 -> dens
 
-    # Example: 30-degree diagonal load pointing down and left
-    magnitude = -1.0
-    angle = 90  # degrees
     load_config = {
         'position': 1,
         'horizontal_magnitude': 0,

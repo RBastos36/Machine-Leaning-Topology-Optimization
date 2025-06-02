@@ -1,6 +1,6 @@
 # A 200 line Topology Optimization code by Niels Aaage and Villads Egede Johansen, January 2013
 # Updated by Niels Aage, February 2016
-# Adapted by Ricardo Bastos, January 2025
+# Adapted by Ricardo Bastos, June 2025
 
 from __future__ import division
 import numpy as np
@@ -32,7 +32,6 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
     device = None
     with open(stats_path, 'r') as f:
         stats = json.load(f)
-
 
     # Initialize model
     model = TopologyOptimizationCNN()
@@ -71,7 +70,7 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
         E = 1
         nu = 0.3
 
-        # dofs:
+        # dofs
         ndof = 2 * (nelx + 1) * (nely + 1)
 
         # Allocate design variables (as array), initialize and allocate sens.
@@ -84,7 +83,6 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
         dc_ml = np.ones(nely * nelx)
 
         # FE: Build the index vectors for the for coo matrix format.
-        # KE = lk(E / A0, nu, A0)
         KE = lk(E, nu)
         edofMat = np.zeros((nelx * nely, 8), dtype=int)
         for elx in range(nelx):
@@ -191,6 +189,7 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
         cvxopt.cholmod.linsolve(K, B)
         u[free, 0] = np.array(B)[:, 0]
 
+        # ML predictor
         save = xPhys.copy()
         domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
         domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
@@ -206,8 +205,6 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
         ce[:] = (np.dot(u[edofMat].reshape(nelx * nely, 8), KE) * u[edofMat].reshape(nelx * nely, 8)).sum(1)
         obj = ((Emin + xPhys ** penal * (Emax - Emin)) * ce).sum()
 
-        # Calculate ML compliance energy
-        # Reshape u_ml to match edofMat shape for element-wise computation
         ce_ml = np.zeros(nely * nelx)
         u_ml_reshaped = np.zeros_like(u)
         u_ml_reshaped[:len(u_ml)] = u_ml.reshape(-1, 1)
@@ -253,16 +250,11 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
             compliance.create_dataset('ce', data=ce_reshaped, compression='gzip')
             compliance.create_dataset('ce_ML', data=ce_ml_reshaped, compression='gzip')
 
-        # Calculate normalized differences
-        # Add a small epsilon to avoid division by zero
         epsilon = 1e-10
 
-        # For displacements, we need to handle areas where the original displacement is near zero
-        # We'll use absolute difference where original values are very small
         delta_u_x_norm = np.divide(u_x - u_x_ml, np.abs(u_x) + epsilon)
         delta_u_y_norm = np.divide(u_y - u_y_ml, np.abs(u_y) + epsilon)
 
-        # For compliance energy
         ce_reshaped = ce.reshape(nelx, nely).T
         ce_ml_reshaped = ce_ml.reshape(nelx, nely).T
         delta_ce_norm = np.divide(ce_reshaped - ce_ml_reshaped, np.abs(ce_reshaped) + epsilon)
@@ -306,7 +298,6 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
 
         # Plot normalized differences in displacement
         fig4, axs4 = plt.subplots(1, 2, figsize=(10, 4))
-        # Use a symmetric colormap with limits to better visualize differences
         vmin, vmax = -1, 1  # For normalized data, -1 to 1 is often sufficient
         im4 = axs4[0].imshow(delta_u_x_norm, cmap='RdBu', interpolation='none', vmin=vmin, vmax=vmax)
         axs4[0].set_title("Normalized X-displacement Difference")

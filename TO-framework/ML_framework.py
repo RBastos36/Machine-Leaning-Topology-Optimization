@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
 
 import os
 import torch
@@ -91,7 +93,6 @@ class SingleInstanceTester:
     def set_plotting_style(self):
         """Set consistent plotting style for visualizations"""
         plt.style.use('seaborn-v0_8-whitegrid')
-        # Define a color-blind friendly palette
         plt.rcParams['axes.prop_cycle'] = plt.cycler(
             color=['#0173B2', '#DE8F05', '#029E73', '#D55E00', '#CC78BC', '#CA9161'])
         plt.rcParams['font.family'] = 'sans-serif'
@@ -337,15 +338,13 @@ def load_input_from_hdf5(hdf5_path, sample_idx=0):
 def main():
     # Paths
     model_path = 'topology_Unet_model.pkl'
-    # Optional: Path to HDF5 dataset for loading real inputs
     hdf5_path = '../dataset-creation/cantilever-diagonal_dataset.h5'
 
-    # Choose your device
+    # Choose device
     # Set to None for auto-detection, 'cuda:0' for first GPU, etc.
     device = None
 
-    # Load statistics if available (or set to None if not using normalization)
-    # stats = None
+    # Load statistics
     with open('dataset-stats.json', 'r') as f:
         stats = json.load(f)
 
