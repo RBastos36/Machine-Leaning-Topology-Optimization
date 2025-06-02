@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import numpy as np
 import torch
@@ -5,7 +9,6 @@ import torch.nn as nn
 from tqdm import tqdm
 from colorama import Fore, Style
 import matplotlib.pyplot as plt
-from torch_geometric.loader import DataLoader
 
 
 class TopologyGNNTrainer:
@@ -71,15 +74,6 @@ class TopologyGNNTrainer:
         # Calculate individual losses
         x_loss = nn.MSELoss()(x_pred, x_target)
         y_loss = nn.MSELoss()(y_pred, y_target)
-        
-        # Option to calculate loss in physical space (if stats are available)
-        if self.stats is not None:
-            # For tracking physical errors, not used in training
-            pred_physical = self.denormalize_predictions(predicted)
-            target_physical = self.denormalize_predictions(target)
-            
-            # x_error_physical = nn.MSELoss()(pred_physical[:, 0], target_physical[:, 0])
-            # y_error_physical = nn.MSELoss()(pred_physical[:, 1], target_physical[:, 1])
 
         return x_loss, y_loss
 
@@ -216,11 +210,6 @@ class TopologyGNNTrainer:
                 print(Fore.MAGENTA + "Model saved!" + Style.RESET_ALL)
             else:
                 print(Fore.MAGENTA + "Model not saved to prevent Overfitting!" + Style.RESET_ALL)
-
-            # Early stopping could be implemented here
-            # if epoch_idx > min_epochs and metrics['val_loss'][-1] > metrics['val_loss'][-2]:
-            #     print(f'Early stopping at epoch {epoch_idx}')
-            #     break
 
         print(Fore.GREEN + f'Training completed after {self.num_epochs} epochs' + Style.RESET_ALL)
         plt.ioff()  # Turn off interactive mode

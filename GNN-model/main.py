@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
 
 import os
-import json
-import torch
 import matplotlib.pyplot as plt
 
 from GNN_dataset import FEMGNN_Dataset, calculate_dataset_statistics, load_fem_gnn_data
@@ -102,96 +102,16 @@ def main():
         learning_rate=learning_rate,
         num_epochs=num_epochs,
         model_path=model_save_path,
-        load_model=load_model,  # Will load if the file exists
+        load_model=load_model,
         stats=stats
     )
 
     # Train the model
     print("Starting training...")
     metrics = trainer.train()
-
-    # # Evaluate on test set
-    # print("Evaluating model on test set...")
-    # test_results = trainer.evaluate(test_loader)
-    #
-    # # Save test results
-    # results_path = os.path.splitext(model_save_path)[0] + '_results.json'
-    # with open(results_path, 'w') as f:
-    #     json.dump(test_results, f, indent=2)
-    #
-    # print(f"Test results saved to {results_path}")
-    #
-    # # Visualization of a few examples from test set (optional)
-    # visualize_examples(model, test_loader, stats, num_examples=3)
     
     # Show the final training plots
     plt.show()
-
-
-# def visualize_examples(model, test_loader, stats, num_examples=3):
-#     """Visualize a few examples from the test set"""
-#     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-#     model.to(device)
-#     model.eval()
-#
-#     # Create a figure for visualization
-#     fig, axes = plt.subplots(num_examples, 2, figsize=(10, 4*num_examples))
-#
-#     # Get a few examples from the test set
-#     shown = 0
-#     with torch.no_grad():
-#         for batch in test_loader:
-#             batch = batch.to(device)
-#
-#             # Predict displacements
-#             predictions = model(batch)
-#
-#             # Denormalize if using stats
-#             if stats is not None:
-#                 means = torch.tensor(stats['outputs']['means']).to(device)
-#                 stds = torch.tensor(stats['outputs']['stds']).to(device)
-#
-#                 pred_physical = (predictions * stds) + means
-#                 target_physical = (batch.y * stds) + means
-#             else:
-#                 pred_physical = predictions
-#                 target_physical = batch.y
-#
-#             # Visualize the examples
-#             for i in range(min(batch.num_graphs, num_examples - shown)):
-#                 if shown >= num_examples:
-#                     break
-#
-#                 # Get node indices for this graph
-#                 batch_mask = batch.batch == i
-#                 nodes_pos = batch.pos[batch_mask].cpu().numpy()
-#                 true_disp = target_physical[batch_mask].cpu().numpy()
-#                 pred_disp = pred_physical[batch_mask].cpu().numpy()
-#
-#                 # Original mesh with true displacements
-#                 ax = axes[shown, 0]
-#                 ax.scatter(nodes_pos[:, 0], nodes_pos[:, 1], c='blue', alpha=0.5, s=10)
-#                 ax.quiver(nodes_pos[:, 0], nodes_pos[:, 1], true_disp[:, 0], true_disp[:, 1],
-#                           color='red', scale=0.5, width=0.003)
-#                 ax.set_title(f'Example {shown+1}: True Displacements')
-#                 ax.set_aspect('equal')
-#
-#                 # Original mesh with predicted displacements
-#                 ax = axes[shown, 1]
-#                 ax.scatter(nodes_pos[:, 0], nodes_pos[:, 1], c='blue', alpha=0.5, s=10)
-#                 ax.quiver(nodes_pos[:, 0], nodes_pos[:, 1], pred_disp[:, 0], pred_disp[:, 1],
-#                           color='green', scale=0.5, width=0.003)
-#                 ax.set_title(f'Example {shown+1}: Predicted Displacements')
-#                 ax.set_aspect('equal')
-#
-#                 shown += 1
-#
-#             if shown >= num_examples:
-#                 break
-#
-#     plt.tight_layout()
-#     plt.savefig('gnn_visualization.png')
-#     print("Visualization saved to gnn_visualization.png")
 
 
 if __name__ == "__main__":

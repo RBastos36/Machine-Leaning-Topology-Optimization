@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch_geometric.data as geom_data
@@ -81,7 +85,7 @@ class FEMGNN_Dataset(Dataset):
         height, width = domain.shape
         
         # 1. Create node features
-        # For each valid node (where domain=1), we store its features
+        # For each valid node (where domain=1), store its features
         valid_nodes = []
         node_features = []
         node_targets = []

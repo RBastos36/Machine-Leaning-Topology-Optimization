@@ -1,8 +1,11 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, GraphConv, MessagePassing
-from torch_geometric.nn import global_mean_pool, global_add_pool
 
 
 class GNNBlock(nn.Module):

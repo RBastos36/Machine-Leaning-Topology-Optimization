@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -106,7 +110,6 @@ class GraphUNet(nn.Module):
             skip_batch = batches[-(i+2)]
             
             # Handle different graph sizes (unpooling)
-            # We need to map back to the original node set in each layer
             x = self._unpool_nodes(x, skip_x, batch, skip_batch)
             
             # Concatenate with skip connection
@@ -145,12 +148,11 @@ class GraphUNet(nn.Module):
             
             if len(pooled_idx) > 0 and len(orig_idx) > 0:
                 # Simple mapping: distribute features uniformly
-                # For each node in the original graph, we assign the average of pooled features
+                # For each node in the original graph, assign the average of pooled features
                 num_orig = len(orig_idx)
                 num_pool = len(pooled_idx)
                 
-                # If there are more pooled nodes than original (shouldn't happen)
-                # just take the first ones
+                # If there are more pooled nodes than original, just take the first ones
                 if num_pool > num_orig:
                     pooled_idx = pooled_idx[:num_orig]
                     num_pool = num_orig
@@ -174,7 +176,7 @@ class DeepGraphUNet(nn.Module):
                  conv_type='GCN', pool_ratios=(0.8, 0.7, 0.6)):
         super(DeepGraphUNet, self).__init__()
         
-        # Ensure we have proper lengths for our U-Net structure
+        # Ensure we have proper lengths for the U-Net structure
         assert len(hidden_dims) == len(pool_ratios) + 1, "Number of hidden dimensions should be one more than pool ratios"
         
         self.num_layers = len(hidden_dims)
@@ -277,7 +279,7 @@ class DeepGraphUNet(nn.Module):
         # Initialize output tensor with zeros
         out = torch.zeros(target_x.size(0), x.size(1), device=device)
         
-        # For each batch, we'll map the pooled nodes back to the original graph
+        # For each batch, map the pooled nodes back to the original graph
         for b in torch.unique(target_batch):
             # Find indices in the pooled graph for this batch
             pooled_idx = (batch == b).nonzero(as_tuple=True)[0]
@@ -292,12 +294,7 @@ class DeepGraphUNet(nn.Module):
             pooled_features = x[pooled_idx]
             
             # Calculate assignment weights based on feature similarity
-            # This helps distribute features in a more meaningful way
             if len(pooled_idx) < len(orig_idx):
-                # We need to map fewer pooled nodes to more original nodes
-                # Use a simple replication strategy with some learned weighting
-                
-                # Simple approach: replicate features to match original size
                 repeat_factor = (len(orig_idx) + len(pooled_idx) - 1) // len(pooled_idx)
                 repeated_features = pooled_features.repeat_interleave(repeat_factor, dim=0)
                 
@@ -308,8 +305,6 @@ class DeepGraphUNet(nn.Module):
                 # Assign to original nodes
                 out[orig_idx[:repeated_features.size(0)]] = repeated_features
             else:
-                # We have more or equal pooled nodes than original nodes
-                # Just take the first ones or average them
                 out[orig_idx] = pooled_features[:len(orig_idx)]
         
         return out
