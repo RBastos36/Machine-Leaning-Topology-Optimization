@@ -8,7 +8,7 @@
 
 Inside the `dataset-creation` directory, several scripts for multiple topology optimization problems can be found, such as cantilever beams, MBB beams, L-brackets, and other variations with holes inside the domain. For the current work, the cantilever beam with diagonal loads (`topopt_cholmod_cantilever_beam_diagonal_load.py`) was parameterized to generate the dataset. 
 
-These scripts are based on the Python framework built by Anderson et al. (2011), which was later adapted by [Niels Aage](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-codes-written-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
+These scripts are based on the Python framework built by Anderson et al. (2011), which was later adapted by [Niels Aage and Villads Egede](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-codes-written-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
 
 This topology optimization dataset referenced in this work is available on [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15026508.svg)](https://doi.org/10.5281/zenodo.15026508).
 
