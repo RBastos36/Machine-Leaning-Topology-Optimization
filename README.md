@@ -3,21 +3,8 @@
 
 
 
+## Key Features
 
-## Dataset
-
-Inside the `dataset-creation` directory, several scripts for multiple topology optimization problems can be found, such as cantilever beams, MBB beams, L-brackets, and other variations with holes inside the domain. For the current work, the cantilever beam with diagonal loads (`topopt_cholmod_cantilever_beam_diagonal_load.py`) was parameterized to generate the dataset. 
-
-These scripts are based on the Python framework built by Anderson et al. (2011), which was later adapted by [Niels Aage and Villads Egede](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-codes-written-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
-
-This topology optimization dataset referenced in this work is available on [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15026508.svg)](https://doi.org/10.5281/zenodo.15026508).
-
-
-This cantilever beam dataset has 9 240 information groups, totaling 119 812 data instances. It was parameterized by changing:
-- Volume fraction;
-- Load relative position on the right edge;
-- Horizontal Load Magnitude;
-- Vertical Load Magnitude.
 
 ## Prerequisites
 
@@ -31,6 +18,38 @@ The following versions were used on the main version of this work:
 - CVXOPT 1.3.2
 - H5py 3.13.0
 - tqdm 4.67.1
+
+## Dataset
+
+Inside the `dataset-creation` directory, several scripts for multiple topology optimization problems can be found, such as cantilever beams, MBB beams, L-brackets, and other variations with holes inside the domain. For the current work, the cantilever beam with diagonal loads (`topopt_cholmod_cantilever_beam_diagonal_load.py`) was parameterized to generate the dataset. 
+
+These scripts are based on the Python framework built by Anderson et al. (2011), which was later adapted by [Niels Aage and Villads Egede](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-codes-written-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
+
+This topology optimization dataset referenced in this work is available on [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15243092.svg)](https://doi.org/10.5281/zenodo.15243092).
+
+
+This cantilever beam dataset has 9 240 information groups, totaling 119 812 data instances. It was parameterized by changing:
+- Volume fraction.
+- Load's relative position on the right edge.
+- Horizontal Load Magnitude.
+- Vertical Load Magnitude.
+
+
+## Machine Learning Architecture
+
+5-channel input tensor with: domain density distribution, loads in _x_- and _y_-directions, and constraints in _x_- and _y_-directions.
+
+2-channel output tensor with: displacements in _x_- and _y_-directions.
+
+Best performing architecture: U-Net
+
+![image](https://github.com/user-attachments/assets/055f8e10-5bfd-4da0-a131-907a5ad09fbd)
+
+
+## Benchmark and Results
+
+
+
 
 ## Citation
 
@@ -67,9 +86,8 @@ This project is licensed under the following licenses:
 
 ## Contact
 
-- **Author**: Ricardo A. O. Bastos
-- **Institutional Email**: [r.bastos@ua.pt](mailto:r.bastos@ua.pt)
 - **LinkedIn**: [Ricardo Bastos](https://www.linkedin.com/in/ricardo-bastos-rantonio/)
+- **Institutional Email**: [r.bastos@ua.pt](mailto:r.bastos@ua.pt)
 
 ## Acknowledgments
 
