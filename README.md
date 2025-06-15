@@ -1,7 +1,7 @@
 # Enhancing Topology Optimization through Machine Learning Models
 ### Master's Thesis – 2025
 
-This repository contains the code for the machine learning training and dataset generation used in the research project “Enhancing Topology Optimization through Machine Learning Models,” which is part of a Master's Thesis at the University of Aveiro. The project explores how deep learning architectures (notably the U-Net architecture) can predict displacement fields in topology optimization structures, accelerating conventional simulation workflows.
+This repository contains the code for the machine learning training and dataset generation used in the research project “Enhancing Topology Optimization through Machine Learning Models,” as part of a Master's Thesis at the University of Aveiro. The project explores how deep learning architectures (notably the U-Net architecture) can predict displacement fields in topology optimization structures, accelerating conventional simulation workflows.
 
 ---
 
@@ -46,7 +46,7 @@ These requirements can all be installed with `pip install`.
 
 ## Dataset
 
-Inside the `dataset-creation` directory, several scripts for generating datasets on various topology optimization problems can be found (such as cantilever beams, MBB beams, L-brackets, etc.).
+Inside the `dataset-creation` directory, several scripts for generating datasets on various topology optimization problems can be found (such as cantilever beams, MBB beams, L-brackets, etc.). These scripts utilize the Solid Isotropic Material with Penalization (SIMP) method to solve the topology optimization problems and save the information to the dataset.
 
 These scripts build on the Python framework based on Anderson et al. (2011), adapted by [Niels Aage and Villads Egede](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
 
@@ -54,7 +54,7 @@ These scripts build on the Python framework based on Anderson et al. (2011), ada
 
 **Cantilever Beam Dataset**  
 - 9 240 parameter groups, 119 812 total instances.
-- Dataset parameterized by changing:
+- The dataset was parameterized by changing:
   - Volume fraction
   - Load’s relative position on the right edge
   - Horizontal Load Magnitude
