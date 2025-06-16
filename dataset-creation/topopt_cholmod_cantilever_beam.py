@@ -9,11 +9,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
-import time
 import h5py
-
-
-# start_time = time.time()
 
 
 def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):

@@ -1,7 +1,10 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import numpy as np
 import torch
-# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 import torch.nn as nn
 from tqdm import tqdm
 from colorama import Fore, Style
@@ -72,10 +75,6 @@ class TopologyTrainer:
             # Denormalize predictions and targets
             pred_physical = self.denormalize_predictions(predicted)
             target_physical = self.denormalize_predictions(target)
-
-            # Calculate physical errors (these could be stored separately)
-            # x_error_physical = nn.MSELoss()(pred_physical[:, 0, :, :], target_physical[:, 0, :, :])
-            # y_error_physical = nn.MSELoss()(pred_physical[:, 1, :, :], target_physical[:, 1, :, :])
 
         return x_loss, y_loss
 
@@ -186,10 +185,7 @@ class TopologyTrainer:
                   f'Y-displacement Loss: {metrics["y_loss"][-1]:.6f}')
 
             # Save model
-            #self.save_model(epoch_idx, metrics)
-
             if (len(metrics['val_loss']) <= 1) or (metrics['val_loss'][-1] == min(metrics['val_loss'])):
-                # save the model
                 self.save_model(epoch_idx, metrics)
                 print(Fore.MAGENTA + "Model saved!" + Style.RESET_ALL)
             else:

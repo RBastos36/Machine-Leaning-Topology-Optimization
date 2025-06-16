@@ -1,4 +1,7 @@
-import torch
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import torch.nn as nn
 
 class ResidualBlock(nn.Module):

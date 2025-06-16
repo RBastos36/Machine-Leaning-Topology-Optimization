@@ -1,7 +1,10 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import torch
 import matplotlib.pyplot as plt
-from CNN_model_simple_node_level import TopologyOptimizationCNN
 
 
 class ModelHistoryPlotter:

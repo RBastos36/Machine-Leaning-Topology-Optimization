@@ -1,7 +1,10 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import numpy as np
 import torch
-# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 import torch.nn as nn
 from tqdm import tqdm
 from colorama import Fore, Style
@@ -72,9 +75,6 @@ class TopologyTrainer:
             mask: Binary mask where 1 indicates constrained nodes for each direction
                   Shape: [batch_size, 2, height, width] (x_mask, y_mask)
         """
-        # Extract fixed matrices from inputs
-        # inputs[:, 1, :, :] = fixed_x (1 means fixed, 0 means free)
-        # inputs[:, 2, :, :] = fixed_y (1 means fixed, 0 means free)
 
         fixed_x = inputs[:, 1:2, :, :]  # Keep dimension: [batch, 1, height, width]
         fixed_y = inputs[:, 2:3, :, :]  # Keep dimension: [batch, 1, height, width]
@@ -105,8 +105,6 @@ class TopologyTrainer:
         bc_mask = self.create_boundary_mask(inputs)
 
         # Apply mask to predictions - we want zero displacement at constrained points
-        # bc_mask[:, 0, :, :] constrains x-displacement (predictions[:, 0, :, :])
-        # bc_mask[:, 1, :, :] constrains y-displacement (predictions[:, 1, :, :])
         constrained_displacements = predictions * bc_mask
 
         # Loss is the magnitude squared of displacements at constrained points
@@ -159,10 +157,6 @@ class TopologyTrainer:
             # Denormalize predictions and targets
             pred_physical = self.denormalize_predictions(predicted)
             target_physical = self.denormalize_predictions(target)
-
-            # Calculate physical errors (these could be stored separately)
-            # x_error_physical = nn.MSELoss()(pred_physical[:, 0, :, :], target_physical[:, 0, :, :])
-            # y_error_physical = nn.MSELoss()(pred_physical[:, 1, :, :], target_physical[:, 1, :, :])
 
         return x_loss, y_loss
 

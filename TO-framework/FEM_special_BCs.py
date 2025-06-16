@@ -11,7 +11,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 import cvxopt
 import cvxopt.cholmod
-import h5py
+import matplotlib.ticker as ticker
 
 # Import U-Net model
 from ML_framework import *
@@ -326,7 +326,38 @@ def fea(nelx, nely, volfrac, load_config, penal, model_path, stats_path):
 
         fig7, axs7 = plt.subplots(figsize=(6, 2))
         im7 = axs7.imshow(dc.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
-        fig7.colorbar(im7, ax=axs7, fraction=0.046, pad=0.04, aspect=10)
+        cbar7 = fig7.colorbar(im7, ax=axs7, fraction=0.046, pad=0.04, aspect=10)
+        # First, let's get the data range to determine the exponent
+        data_max = np.max(dc)
+        data_min = np.min(dc)
+
+        # Determine the order of magnitude
+        order_of_magnitude = int(np.floor(np.log10(max(abs(data_max), abs(data_min)))))
+
+        # Set up scientific notation formatter but with more precision
+        formatter = ticker.ScalarFormatter(useMathText=False)
+        formatter.set_scientific(True)
+        formatter.set_powerlimits((0, 0))
+
+        # Create custom tick locator and formatter to show 2 significant digits
+        # but keep the scientific notation format
+        def custom_format(x, pos):
+            if x == 0:
+                return '0.0'
+            # Get the coefficient when expressed in scientific notation
+            coeff = x / (10 ** order_of_magnitude)
+            return f'{coeff:.1f}'
+
+        # Apply the formatter
+        cbar7.formatter = ticker.FuncFormatter(custom_format)
+
+        # Set the exponent label manually at the top
+        scientific_label = f'1e{order_of_magnitude:d}' if order_of_magnitude != 0 else ''
+        if scientific_label:
+            cbar7.ax.text(0.5, 1.02, scientific_label, transform=cbar7.ax.transAxes,
+                          ha='center', va='bottom')
+
+        cbar7.update_ticks()
 
         fig8, axs8 = plt.subplots(figsize=(6, 2))
         im8 = axs8.imshow(dc_ml.reshape((nelx, nely)).T, cmap='inferno', interpolation='none')
@@ -532,8 +563,8 @@ if __name__ == "__main__":
     nelx = 180
     nely = 60
 
-    model_path = '../CNN-model/models/topology_Unet_model_Loss_BC.pkl'
-    stats_path = '../CNN-model/dataset_stats_loss_bcs.json'
+    model_path = '../CNN-model/models/topology_Unet_model_ORIGINAL.pkl'
+    stats_path = '../CNN-model/dataset_stats.json'
 
     # Load configuration
     load_config = {

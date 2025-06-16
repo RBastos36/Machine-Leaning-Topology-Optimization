@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
 
 import h5py
 import json
@@ -176,7 +177,7 @@ def split_dataset(hdf5_path, output_json_path, train_size=0.7, validation_size=0
 
 if __name__ == "__main__":
     # Parameters
-    hdf5_path = "cantilever-diagonal_dataset.h5"  # Update this to your file path
+    hdf5_path = "cantilever-diagonal_dataset.h5"
     output_json_path = "dataset_split.json"
 
     # Split dataset

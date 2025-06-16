@@ -1,7 +1,10 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import os
 import torch
 import matplotlib.pyplot as plt
-from CNN_model_simple_node_level import TopologyOptimizationCNN
 
 
 class ModelHistoryPlotter:
@@ -52,7 +55,7 @@ class ModelHistoryPlotter:
         ax1.legend(frameon=True, loc='upper right', facecolor='white', edgecolor='gray')
 
         plt.tight_layout()
-        fig1.savefig("model_loss_loss_bcs.svg")
+        fig1.savefig("model_loss_original.svg")
         plt.show()
 
         # Second figure: Component-wise Loss
@@ -74,12 +77,12 @@ class ModelHistoryPlotter:
         print(min([float(x) for x in metrics['y_loss']]))
 
         plt.tight_layout()
-        fig2.savefig("component_loss_loss_bcs.svg")
+        fig2.savefig("component_loss_original.svg")
         plt.show()
 
 
 def main():
-    model_path = 'models/topology_Unet_model_Loss_BC.pkl'
+    model_path = 'models/topology_Unet_model_ORIGINAL.pkl'
     plotter = ModelHistoryPlotter(model_path)
     metrics = plotter.load_model()
     plotter.plot_training_history(metrics)

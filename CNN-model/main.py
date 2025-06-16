@@ -1,5 +1,7 @@
-#!/usr/bin/env python3
-import torch
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import torch.nn as nn

@@ -389,7 +389,7 @@ if __name__ == "__main__":
 
     # Example: 30-degree diagonal load pointing down and left
     magnitude = -1.0
-    angle = 90  # degrees
+    angle = 30  # degrees
     load_config = {
         'position': 0.5,
         'horizontal_magnitude': magnitude * np.cos(np.radians(angle)),

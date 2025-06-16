@@ -51,9 +51,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
     h5file = h5py.File('cantilever_diagonal_framework.h5', 'a')
 
     # ML initializations
-    model_path = '../CNN-model/models/topology_Unet_model_Loss_BC.pkl'
+    model_path = '../CNN-model/models/topology_Unet_model_ORIGINAL.pkl'
     device = None
-    with open('../CNN-model/dataset_stats_loss_bcs.json', 'r') as f:
+    with open('../CNN-model/dataset_stats.json', 'r') as f:
         stats = json.load(f)
 
     # Initialize model
@@ -201,6 +201,9 @@ def topopt(nelx, nely, volfrac, penal, rmin, ft, load_config):
             loop = loop + 1
             # Substitute FEM displacements by the U-Net model
             xPhys_2_save = xPhys
+            if loop == 1:
+                fig.savefig(f"z_initial_domain_0.8.svg", bbox_inches='tight')
+                break
             domain = np.zeros((xPhys.reshape((nelx, nely)).T.shape[0] + 1, xPhys.reshape((nelx, nely)).T.shape[1] + 1))
             domain[:-1, :-1] = xPhys.reshape((nelx, nely)).T
             # domain = extrapolate_domain_uniform(xPhys.reshape((nelx, nely)).T)
@@ -439,7 +442,7 @@ if __name__ == "__main__":
     # Default input parameters
     nelx = 180
     nely = 60
-    volfrac = 0.5
+    volfrac = 0.8
     rmin = 5.4
     penal = 3.0
     ft = 0  # ft==0 -> sens, ft==1 -> dens

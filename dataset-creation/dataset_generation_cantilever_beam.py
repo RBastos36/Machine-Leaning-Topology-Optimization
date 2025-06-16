@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 from topopt_cholmod_cantilever_beam_diagonal_load import topopt
 import numpy as np
 import time

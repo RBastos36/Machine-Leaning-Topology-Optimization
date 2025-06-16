@@ -1,3 +1,7 @@
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
+
 import h5py
 import matplotlib.pyplot as plt
 

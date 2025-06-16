@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
 
 import h5py
 import json
@@ -220,7 +221,6 @@ def split_dataset(hdf5_path, output_json_path, train_size=0.8, validation_size=0
             n_train = max(int(n_total * train_size), 1)
             n_validation = max(int(n_total * validation_size), 1)
 
-            # Ensure we don't exceed the sample count
             n_validation = min(n_validation, n_total - n_train)
             n_test = n_total - n_train - n_validation
 

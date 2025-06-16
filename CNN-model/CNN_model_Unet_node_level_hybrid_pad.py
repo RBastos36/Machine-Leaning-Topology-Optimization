@@ -51,7 +51,7 @@ class TopologyOptimizationCNN(nn.Module):
     def __init__(self):
         super(TopologyOptimizationCNN, self).__init__()
 
-        # Hybrid encoder - your original design
+        # Encoder
         self.enc1 = UNetBlock(5, 32, padding=0)  # valid padding - reduces size
         self.enc2 = UNetBlock(32, 64, padding=0)  # valid padding - reduces size
         self.enc3 = UNetBlock(64, 128, padding=1)  # same padding - preserves size
@@ -81,53 +81,33 @@ class TopologyOptimizationCNN(nn.Module):
         # Store original input size for final resize
         original_size = x.shape[2:]
 
-        # Debug: print input size
-        # print(f"Input size: {x.shape}")
-
         # Encoder path
         enc1 = self.enc1(x)  # Size reduces due to valid padding
-        # print(f"enc1 size: {enc1.shape}")
-
         enc2 = self.enc2(self.pool(enc1))  # Size reduces further due to valid padding
-        # print(f"enc2 size: {enc2.shape}")
-
         enc3 = self.enc3(self.pool(enc2))  # Same padding from here - size preserved (except pooling)
-        # print(f"enc3 size: {enc3.shape}")
-
         enc4 = self.enc4(self.pool(enc3))  # Same padding - size preserved (except pooling)
-        # print(f"enc4 size: {enc4.shape}")
 
         # Bottleneck
         bottleneck = self.bottleneck(self.pool(enc4))
-        # print(f"bottleneck size: {bottleneck.shape}")
 
-        # Decoder path - use improved crop function that handles all cases
+        # Decoder path
         up4 = self.up4(bottleneck)
-        # print(f"up4 size: {up4.shape}")
         enc4_crop = crop_tensor(enc4, up4.shape)
-        # print(f"enc4_crop size: {enc4_crop.shape}")
         dec4 = self.dec4(torch.cat([up4, enc4_crop], dim=1))
 
         up3 = self.up3(dec4)
-        # print(f"up3 size: {up3.shape}")
         enc3_crop = crop_tensor(enc3, up3.shape)
-        # print(f"enc3_crop size: {enc3_crop.shape}")
         dec3 = self.dec3(torch.cat([up3, enc3_crop], dim=1))
 
         up2 = self.up2(dec3)
-        # print(f"up2 size: {up2.shape}")
         enc2_crop = crop_tensor(enc2, up2.shape)
-        # print(f"enc2_crop size: {enc2_crop.shape}")
         dec2 = self.dec2(torch.cat([up2, enc2_crop], dim=1))
 
         up1 = self.up1(dec2)
-        # print(f"up1 size: {up1.shape}")
         enc1_crop = crop_tensor(enc1, up1.shape)
-        # print(f"enc1_crop size: {enc1_crop.shape}")
         dec1 = self.dec1(torch.cat([up1, enc1_crop], dim=1))
 
         out = self.out_conv(dec1)
-        # print(f"output size before resize: {out.shape}")
 
         # Resize output to match original input size
         if out.shape[2:] != original_size:
@@ -138,5 +118,4 @@ class TopologyOptimizationCNN(nn.Module):
                 align_corners=False
             )
 
-        # print(f"final output size: {out.shape}")
         return out

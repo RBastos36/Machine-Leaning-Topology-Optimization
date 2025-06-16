@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+# Author: Ricardo A. O. Bastos
+# Created: June 2025
+
 
 import os
 import torch
@@ -7,12 +9,11 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import json
-import h5py
 from scipy.stats import wasserstein_distance, pearsonr
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics.pairwise import cosine_similarity
 
-from CNN_dataset import FEMDataset, calculate_dataset_statistics
+from CNN_dataset import FEMDataset
 from CNN_model_Unet_node_level import TopologyOptimizationCNN
 
 
@@ -57,6 +58,7 @@ class ModelTester:
 
         all_predictions = []
         all_targets = []
+        all_inputs = []
 
         with torch.no_grad():
             for inputs, targets in tqdm(self.test_loader, desc='Evaluating model'):
@@ -76,6 +78,7 @@ class ModelTester:
                 # Store for visualization
                 all_predictions.append(predictions.cpu())
                 all_targets.append(targets.cpu())
+                all_inputs.append(inputs.cpu())  # NEW: Store inputs
 
         # Calculate average loss
         avg_loss = total_loss / len(self.test_loader.dataset)
@@ -86,8 +89,8 @@ class ModelTester:
         print(f"X-displacement Loss: {avg_x_loss:.6f}")
         print(f"Y-displacement Loss: {avg_y_loss:.6f}")
 
-        # Return concatenated predictions and targets for visualization
-        return torch.cat(all_predictions), torch.cat(all_targets)
+        # Return concatenated predictions, targets, and inputs for visualization
+        return torch.cat(all_predictions), torch.cat(all_targets), torch.cat(all_inputs)
 
     def set_plotting_style(self):
         """Set consistent plotting style for all visualizations"""
@@ -106,8 +109,7 @@ class ModelTester:
         plt.rcParams['legend.fontsize'] = 18
         plt.rcParams['figure.titlesize'] = 18
 
-
-    def visualize_predictions(self, predictions, targets, num_samples=5):
+    def visualize_predictions(self, predictions, targets, num_samples=5, inputs=None):
         """Visualize model predictions against ground truth and error maps, saving each separately."""
         self.set_plotting_style()
 
@@ -135,17 +137,16 @@ class ModelTester:
 
             ## === Ground Truth Figure ===
             fig_gt, axes_gt = plt.subplots(2, 1, figsize=(8, 10), dpi=150)
-            # fig_gt.suptitle(f'Ground Truth Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_gt_x = axes_gt[0].imshow(target[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
-            axes_gt[0].set_title(r"O$\mathit{x}$-displacement")
+            axes_gt[0].set_title(r"$\mathit{x}$-displacement")
             axes_gt[0].set_xticks([])
             axes_gt[0].set_yticks([])
             cbar_gt_x = plt.colorbar(im_gt_x, ax=axes_gt[0], fraction=0.046, pad=0.04)
             cbar_gt_x.ax.tick_params(labelsize=16)
 
             im_gt_y = axes_gt[1].imshow(target[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
-            axes_gt[1].set_title(r"O$\mathit{y}$-displacement")
+            axes_gt[1].set_title(r"$\mathit{y}$-displacement")
             axes_gt[1].set_xticks([])
             axes_gt[1].set_yticks([])
             cbar_gt_y = plt.colorbar(im_gt_y, ax=axes_gt[1], fraction=0.046, pad=0.04)
@@ -162,14 +163,14 @@ class ModelTester:
             # fig_pred.suptitle(f'Predicted Displacements - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_pred_x = axes_pred[0].imshow(pred[0].numpy(), cmap='seismic', vmin=x_min, vmax=x_max)
-            axes_pred[0].set_title(r"O$\mathit{x}$-displacement")
+            axes_pred[0].set_title(r"$\mathit{x}$-displacement")
             axes_pred[0].set_xticks([])
             axes_pred[0].set_yticks([])
             cbar_pred_x = plt.colorbar(im_pred_x, ax=axes_pred[0], fraction=0.046, pad=0.04)
             cbar_pred_x.ax.tick_params(labelsize=16)
 
             im_pred_y = axes_pred[1].imshow(pred[1].numpy(), cmap='seismic', vmin=y_min, vmax=y_max)
-            axes_pred[1].set_title(r"O$\mathit{y}$-displacement")
+            axes_pred[1].set_title(r"$\mathit{y}$-displacement")
             axes_pred[1].set_xticks([])
             axes_pred[1].set_yticks([])
             cbar_pred_y = plt.colorbar(im_pred_y, ax=axes_pred[1], fraction=0.046, pad=0.04)
@@ -186,14 +187,14 @@ class ModelTester:
             # fig_err.suptitle(f'Displacement Error Maps - Sample {i + 1}', fontsize=16, fontweight='bold', y=0.98)
 
             im_err_x = axes_err[0].imshow(error[0].numpy(), cmap='seismic', vmin=error_x_min, vmax=error_x_max)
-            axes_err[0].set_title(r"O$\mathit{x}$-displacement")
+            axes_err[0].set_title(r"$\mathit{x}$-displacement")
             axes_err[0].set_xticks([])
             axes_err[0].set_yticks([])
             cbar_err_x = plt.colorbar(im_err_x, ax=axes_err[0], fraction=0.046, pad=0.04)
             cbar_err_x.ax.tick_params(labelsize=16)
 
             im_err_y = axes_err[1].imshow(error[1].numpy(), cmap='seismic', vmin=error_y_min, vmax=error_y_max)
-            axes_err[1].set_title(r"O$\mathit{y}$-displacement")
+            axes_err[1].set_title(r"$\mathit{y}$-displacement")
             axes_err[1].set_xticks([])
             axes_err[1].set_yticks([])
             cbar_err_y = plt.colorbar(im_err_y, ax=axes_err[1], fraction=0.046, pad=0.04)
@@ -320,7 +321,7 @@ class ModelTester:
         ax2.legend()
 
         plt.tight_layout()
-        plt.subplots_adjust(top=0.90)  # Adjust for suptitle
+        plt.subplots_adjust(top=0.90)
         plt.savefig("error_distribution.png", dpi=300, bbox_inches='tight')
         plt.savefig("error_distribution.svg", bbox_inches='tight')
         plt.close()
@@ -382,7 +383,7 @@ class ModelTester:
 
         # Adjust layout
         plt.tight_layout()
-        plt.subplots_adjust(top=0.90)  # Adjust for suptitle
+        plt.subplots_adjust(top=0.90)
 
         # Save with higher quality
         plt.savefig("training_history.png", dpi=300, bbox_inches='tight')
@@ -401,7 +402,6 @@ def main():
 
     # Calculate dataset statistics for normalization
     print("Loading dataset statistics...")
-    # stats = calculate_dataset_statistics(hdf5_path, json_split_path, batch_size)
 
     with open("dataset_stats.json", "r") as outfile:
         stats = json.load(outfile)
@@ -443,10 +443,10 @@ def main():
     tester.plot_training_history(metrics)
 
     # Evaluate model
-    predictions, targets = tester.evaluate()
+    predictions, targets, inputs = tester.evaluate()  # NEW: Get inputs too
 
     # Visualize predictions
-    tester.visualize_predictions(predictions, targets, num_samples=5)
+    tester.visualize_predictions(predictions, targets, num_samples=5, inputs=inputs)  # NEW: Pass inputs
 
     # Analyze error distribution
     tester.analyze_error_distribution(predictions, targets)
