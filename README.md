@@ -1,28 +1,36 @@
-# Code repository for "Enhancing Topology Optimization through Machine Learning Models"
-### Master's Thesis - 2025
+# Enhancing Topology Optimization through Machine Learning Models
+### Master's Thesis – 2025
 
+This repository contains the code for the machine learning training and dataset generation used in the research project “Enhancing Topology Optimization through Machine Learning Models,” as part of a Master's Thesis at the University of Aveiro. The project explores how deep learning architectures (notably the U-Net architecture) can predict displacement fields in topology optimization structures, accelerating conventional simulation workflows.
 
+---
 
+## Table of Contents
+- [Key Features](#key-features)
+- [Prerequisites](#prerequisites)
+- [Dataset](#dataset)
+- [Machine Learning Architecture](#machine-learning-architecture)
+- [Benchmark and Results](#benchmark-and-results)
+- [Citation](#citation)
+- [License](#license)
+- [Contact](#contact)
+- [Acknowledgments](#acknowledgments)
 
-## Dataset
+---
 
-Inside the `dataset-creation` directory, several scripts for multiple topology optimization problems can be found, such as cantilever beams, MBB beams, L-brackets, and other variations with holes inside the domain. For the current work, the cantilever beam with diagonal loads (`topopt_cholmod_cantilever_beam_diagonal_load.py`) was parameterized to generate the dataset. 
+## Key Features
 
-These scripts are based on the Python framework built by Anderson et al., which was later adapted by Niels Aage ([TopOpt](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-codes-written-in-python)) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
+- Scripts to generate, preprocess, and use large-scale topology optimization datasets.
+- Deep learning models (e.g., U-Net) for predicting mechanical responses from structural layouts.
+- Reproducible experiments and benchmarking tools.
+- Support for various topology optimization problems: cantilever beams, MBB beams, L-brackets, and more.
+- Open-source dataset and code for academic use.
 
-This topology optimization dataset referenced in this work is available on [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15026508.svg)](https://doi.org/10.5281/zenodo.15026508).
-
-
-This cantilever beam dataset has 9 240 information groups, totaling 119 812 data instances. It was parameterized by changing:
-- Volume fraction;
-- Load relative position on the right edge;
-- Horizontal Load Magnitude;
-- Vertical Load Magnitude.
+---
 
 ## Prerequisites
 
-The following versions were used on the main version of this work:
-
+The following versions were used for the main experiments:
 - Python 3.12
 - NumPy 2.2.2
 - SciPy 1.15.1
@@ -31,6 +39,57 @@ The following versions were used on the main version of this work:
 - CVXOPT 1.3.2
 - H5py 3.13.0
 - tqdm 4.67.1
+
+These requirements can all be installed with `pip install`.
+
+---
+
+## Dataset
+
+Inside the `dataset-creation` directory, several scripts for generating datasets on various topology optimization problems can be found (such as cantilever beams, MBB beams, L-brackets, etc.). These scripts utilize the Solid Isotropic Material with Penalization (SIMP) method to solve the topology optimization problems and save the information to the dataset.
+
+These scripts build on the Python framework based on Anderson et al. (2011), adapted by [Niels Aage and Villads Egede](https://www.topopt.mek.dtu.dk/apps-and-software/topology-optimization-in-python) to optimize its Finite Element Method solver by using Cholesky factorization (CHOLMOD solver).
+
+- Dataset DOI: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15243092.svg)](https://doi.org/10.5281/zenodo.15243092)
+
+**Cantilever Beam Dataset**  
+- 9 240 parameter groups, 119 812 total instances.
+- The dataset was parameterized by changing:
+  - Volume fraction
+  - Load’s relative position on the right edge
+  - Horizontal Load Magnitude
+  - Vertical Load Magnitude
+
+---
+
+## Machine Learning Architecture
+
+- **Input:** 5-channel tensor (domain density distribution, loads in _x_- and _y_-directions, constraints in _x_- and _y_-directions)
+- **Output:** 2-channel tensor (displacements in _x_- and _y_-directions)
+- **Best Model:** U-Net
+
+![U-Net Architecture](https://github.com/user-attachments/assets/055f8e10-5bfd-4da0-a131-907a5ad09fbd)
+
+---
+
+## Benchmark and Results
+
+The U-Net architecture with max pooling achieved a Mean Squared Error (MSE) loss of $2.34 \times 10^{−4}$. Z-score normalization was used to preprocess the data, and the model was trained with a learning rate of 0.001, a batch size of 16, and the Adam optimizer.
+![model_loss](https://github.com/user-attachments/assets/e2a791d2-4c89-41e9-9c48-3b7ce4ae0293)
+
+
+The machine learning topology optimization framework achieved a 6.5 times speedup for the 180 by 60 domain size of the cantilever beam problem (compared to the traditional SIMP method). The predictions were visually very similar, as illustrated below in a random test sample (homogeneous domain density of 0.8, relative load position of 0.2, horizontal load of 50, and vertical load of 80).
+
+![Random_Test_Sample](https://github.com/user-attachments/assets/f5612043-9894-40de-af0a-944ea3c26fa3)
+
+However, pixel-wise errors were still large enough to deviate the material layout in the topology optimization, as shown below, which makes the solution diverge, or converge towards non-optimal designs.
+
+![Topology-Optimization_U-Net](https://github.com/user-attachments/assets/0f1117c6-3332-4676-89a4-dbd4bff7f951)
+
+Despite these shortcomings, this displacement predictor can serve as a standalone solver, offering significant acceleration for engineering tasks at the cost of some precision. Also, this machine learning framework can be implemented in non-gradient-based optimizers (such as genetic algorithms or particle swarm optimization). Since these methods do not rely on sensitivity calculations, the pixel-wise errors will not destabilize the topology optimization process, as compliance values will guide the optimization.
+
+
+---
 
 ## Citation
 
@@ -57,24 +116,27 @@ To use this code or the generated dataset in other research, please cite:
 }
 ```
 
+---
+
 ## License
 
-This project is licensed under the following licenses:
+This project is licensed under:
+- 🖥️ Code: MIT License – see [LICENSE](./LICENSE)
+- 📊 Dataset: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) via [Zenodo](https://zenodo.org/records/15243092)
 
-🖥️ Code: MIT License - see [LICENSE](./LICENSE) for details.  
-📊 Dataset: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) via [Zenodo](https://zenodo.org/records/15243092).
-
+---
 
 ## Contact
 
-- **Author**: Ricardo A. O. Bastos
-- **Institutional Email**: [r.bastos@ua.pt](mailto:r.bastos@ua.pt)
-- **LinkedIn**: [Ricardo Bastos](https://www.linkedin.com/in/ricardo-bastos-rantonio/)
+- **LinkedIn:** [Ricardo Bastos](https://www.linkedin.com/in/ricardo-bastos-rantonio/)
+- **Institutional Email:** [r.bastos@ua.pt](mailto:r.bastos@ua.pt)
+
+---
 
 ## Acknowledgments
 
-- **Thesis advisor**: Prof. Dr. João Oliveira, University of Aveiro
-- **Thesis co-advisor**: Dr. Mafalda Gonçalves, INEGI
----
+- **Thesis advisor:** Prof. Dr. João Oliveira, University of Aveiro
+- **Co-advisor:** Dr. Mafalda Gonçalves, INEGI
 
+---
 *This repository is part of a Master's Thesis research project on "Enhancing Topology Optimization through Machine Learning Models".*
